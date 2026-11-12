@@ -1,4 +1,4 @@
-name: FocusWatch
+name: Flowbeat
 options:
   bundleIdPrefix: com.xungirl
   deploymentTarget:
@@ -9,28 +9,28 @@ settings:
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
 targets:
-  FocusWatch:
+  Flowbeat:
     type: application
     platform: watchOS
-    sources: [FocusWatch]
+    sources: [Flowbeat]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.focuswatch
+        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
         # 在 Xcode 里 Signing & Capabilities 选你自己的 Team 后会写进这里
         DEVELOPMENT_TEAM: ""
-        INFOPLIST_KEY_CFBundleDisplayName: 专注
+        INFOPLIST_KEY_CFBundleDisplayName: Flowbeat
         INFOPLIST_KEY_WKWatchOnly: YES
         INFOPLIST_KEY_NSHealthShareUsageDescription: 读取心率，用来估计你是否处于专注状态。
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: 开启专注时段需要启动一个「身心」类体能训练以持续读取心率（结束时不会保存）。
     info:
-      path: FocusWatch/Info.plist
+      path: Flowbeat/Info.plist
       properties:
         WKApplication: true
         WKBackgroundModes: [workout-processing]
     entitlements:
-      path: FocusWatch/FocusWatch.entitlements
+      path: Flowbeat/Flowbeat.entitlements
       properties:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []

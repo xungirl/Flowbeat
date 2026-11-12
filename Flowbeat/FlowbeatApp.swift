@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct FocusWatchApp: App {
+struct FlowbeatApp: App {
     @StateObject private var session = FocusSession()
 
     var body: some Scene {

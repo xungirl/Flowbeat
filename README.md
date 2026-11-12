@@ -1,37 +1,41 @@
-# FocusWatch
+# Flowbeat · 心流
 
-Apple Watch 专注监测：用 **心率 + 手腕动作** 估计你是否在专注，输出 0–100 的「专注指数」。
+**Flowbeat** is an Apple Watch app that estimates whether you're in a state of focus ("flow") from your **heart rate** and **wrist motion**, and shows it as a live 0–100 focus score.
 
-## 运行
+> Flowbeat 是一款 Apple Watch app：通过**心率**和**手腕动作**判断你是否进入了「心流」专注状态，实时给出 0–100 的专注指数。
+
+## How it works
+
+| File | Role |
+|---|---|
+| `Flowbeat/FocusSession.swift` | Starts an `HKWorkoutSession` (mind & body) to get heart rate every few seconds and keep running in the background; reads wrist acceleration via CoreMotion at 25 Hz; scores once per second. The workout is discarded at the end, so nothing is written to Health. |
+| `Flowbeat/FocusScorer.swift` | Pure scoring logic: a 60 s calibration sets your resting-HR baseline → motion penalty (≤ 60) + elevated-HR penalty (≤ 40) → exponential smoothing. |
+| `Flowbeat/ContentView.swift` | Start / in-session / summary screens. |
+
+During a session you can tap **专注 (focused)** or **走神 (distracted)** to label the moment. Each session is saved as JSON in the app's `Documents/sessions/`, to be used later to tune the scoring or train a personal model.
+
+Blood oxygen is intentionally not used: third-party apps can't trigger SpO₂ readings, and it doesn't change with focus.
+
+## Run it
 
 ```bash
-brew install xcodegen      # 只需一次
-xcodegen generate          # 由 project.yml 生成 FocusWatch.xcodeproj（不进 git）
-open FocusWatch.xcodeproj
+brew install xcodegen
+xcodegen generate        # generates Flowbeat.xcodeproj from project.yml (not committed)
+open Flowbeat.xcodeproj
 ```
 
-Xcode 里：
-1. 选 target `FocusWatch` → **Signing & Capabilities** → Team 选你的 Apple ID（免费账号即可）
-2. 手表：设置 → 隐私与安全 → **开发者模式** 打开（iPhone 上也要打开）
-3. 顶部设备选你的 Apple Watch → ⌘R
-4. 免费账号签名 7 天过期，过期了重新 ⌘R 一次
+1. Target `Flowbeat` → **Signing & Capabilities** → pick your Team (a free Apple ID works for personal devices).
+2. Turn on **Developer Mode** on both iPhone and Apple Watch.
+3. Choose your Apple Watch as the run destination → ⌘R.
 
-## 原理
+The simulator is fine for UI, but it has no real sensors — use a real watch to see meaningful scores.
 
-| 文件 | 作用 |
-|---|---|
-| `FocusSession.swift` | 开 `HKWorkoutSession`（mindAndBody）拿每隔几秒一次的心率，并且能在后台继续运行；用 CoreMotion 以 25Hz 读手腕加速度；每秒算一次分，结束时丢弃这次 workout（不会往「健康」里写数据） |
-| `FocusScorer.swift` | 纯逻辑：前 60 秒校准出心率基线 → 动作扣分（最多 60）+ 心率高于基线扣分（最多 40）→ 平滑 |
-| `ContentView.swift` | 开始 / 进行中 / 总结 三个页面 |
+## Roadmap
 
-每次的记录存在手表 app 的 `Documents/sessions/*.json`，进行中点「专注 / 走神」会打上标签，后面用来训练你自己的模型。
+- [x] v0: live score on the watch, calibration, labeling, JSON logging
+- [ ] iPhone companion: sync sessions (WatchConnectivity) and chart your focus timeline
+- [ ] Tune thresholds / train a personal model (Create ML) from labeled sessions
+- [ ] Use system HRV (SDNN) as an extra signal
+- [ ] Integrate with [Nod](https://github.com/xungirl/Nod): hold notifications while you're in flow
 
-## 路线图
-
-- [x] v0：手表端实时分数 + 校准 + 打标签 + JSON 记录
-- [ ] iPhone 伴侣 app：同步记录（WatchConnectivity），画专注曲线
-- [ ] 用打过的标签调阈值 / 训练个人模型（Create ML）
-- [ ] 读系统 HRV（SDNN）当辅助指标
-- [ ] 和 [Nod](https://github.com/xungirl/Nod) 联动：专注时压住通知
-
-> 注意：这是基于身体信号的**估计**，不是医学测量。
+> Flowbeat gives an estimate based on body signals. It is not a medical device.
