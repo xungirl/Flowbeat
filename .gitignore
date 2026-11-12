@@ -4,3 +4,7 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 Flowbeat.xcodeproj/
+backend/.venv/
+__pycache__/
+.pytest_cache/
+.env
