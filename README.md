@@ -25,8 +25,8 @@ The per-second score stays rule-based and on-device; the LLM adds a periodic sec
 ```bash
 cd backend
 uv sync
-export ANTHROPIC_API_KEY=...            # without a key it falls back to a fake provider
-uv run uvicorn app.main:app --host 0.0.0.0 --port 8765
+cp .env.example .env                     # then put your key in .env (git-ignored)
+uv run uvicorn app.main:app --env-file .env --host 0.0.0.0 --port 8765
 uv run pytest                            # tests use the fake provider
 ```
 
