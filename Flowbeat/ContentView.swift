@@ -143,7 +143,7 @@ struct MetricsPage: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            ring.frame(width: 118, height: 118)
+            ring.frame(width: 104, height: 104)
             HStack {
                 HStack(spacing: 3) {
                     Image(systemName: "heart.fill")
@@ -157,6 +157,8 @@ struct MetricsPage: View {
             }
             .font(.system(.footnote, design: .rounded, weight: .medium))
             .padding(.horizontal, 4)
+
+            AILine()
         }
         .containerBackground(background.gradient.opacity(0.28), for: .tabView)
     }
@@ -208,6 +210,42 @@ struct MetricsPage: View {
         if session.isAway { return .cyan }
         if session.phase == .calibrating { return .gray }
         return Theme.color(for: session.score)
+    }
+}
+
+/// AI 的最新判断：一句理由。还没轮到第一次判断 / 连不上时给提示
+struct AILine: View {
+    @EnvironmentObject var session: FocusSession
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "sparkles")
+                .foregroundStyle(color)
+            Text(text)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+                .foregroundStyle(session.aiJudgment == nil ? .secondary : .primary)
+        }
+        .font(.system(size: 11, weight: .medium, design: .rounded))
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(.white.opacity(0.08), in: Capsule())
+        .animation(.default, value: session.aiJudgment)
+    }
+
+    private var text: String {
+        if let j = session.aiJudgment { return j.reason }
+        if let e = session.aiError { return e }
+        return session.phase == .calibrating ? "AI 等待校准完成" : "AI 正在观察…"
+    }
+
+    private var color: Color {
+        switch session.aiJudgment?.state {
+        case "focused": return .mint
+        case "distracted": return .orange
+        case "away": return .cyan
+        default: return .secondary
+        }
     }
 }
 
@@ -306,6 +344,8 @@ struct SummaryView: View {
                 }
                 .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
 
+                aiReviewCard
+
                 Button("完成") { session.reset() }
                     .buttonStyle(.borderedProminent)
                     .tint(.mint)
@@ -313,6 +353,30 @@ struct SummaryView: View {
         }
         .navigationTitle("本次总结")
         .containerBackground(Theme.color(for: session.averageScore).gradient.opacity(0.22), for: .navigation)
+    }
+
+    @ViewBuilder private var aiReviewCard: some View {
+        if session.aiReviewLoading {
+            HStack(spacing: 6) {
+                ProgressView().frame(width: 16, height: 16)
+                Text("AI 复盘中…").font(.footnote).foregroundStyle(.secondary)
+            }
+        } else if let r = session.aiReview {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("AI 复盘", systemImage: "sparkles")
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(.mint)
+                Text(r.summary).font(.footnote)
+                HStack(alignment: .top, spacing: 4) {
+                    Image(systemName: "lightbulb.fill").foregroundStyle(.yellow)
+                    Text(r.tip)
+                }
+                .font(.footnote)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(10)
+            .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+        }
     }
 
     private func stat(_ icon: String, _ color: Color, _ k: String, _ v: String) -> some View {

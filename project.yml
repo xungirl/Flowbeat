@@ -31,6 +31,8 @@ targets:
       properties:
         WKApplication: true
         WKBackgroundModes: [workout-processing]
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
     entitlements:
       path: Flowbeat/Flowbeat.entitlements
       properties:

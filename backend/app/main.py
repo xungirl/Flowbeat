@@ -1,7 +1,7 @@
 """Flowbeat 后端：手表每 2 分钟调一次 /v1/judge，结束时调一次 /v1/review。
 
 本地运行：
-    cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+    cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 8765
 """
 
 import logging

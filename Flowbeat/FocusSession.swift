@@ -14,6 +14,14 @@ struct FocusSample: Codable {
     var away: Bool = false
 }
 
+/// 一次专注的完整存档：逐秒样本 + AI 窗口摘要 + AI 判断 + 复盘
+struct SessionRecord: Codable {
+    let samples: [FocusSample]
+    let windows: [WindowSummary]
+    let judgments: [Judgment]
+    let review: Review?
+}
+
 /// 负责：HealthKit 授权 → 开 workout session 拿实时心率 → CoreMotion 拿手腕动作 → 每秒算一次分。
 ///
 /// 为什么要开 workout？watchOS 只有在 workout 进行中才会每隔几秒测一次心率，
@@ -51,6 +59,15 @@ final class FocusSession: NSObject, ObservableObject {
     private var startDate: Date?
     private var tickTimer: Timer?
     private var pendingLabel: String?
+
+    // AI 判断（后端 + 大模型）。连不上后端时这些保持 nil，本地规则照常工作。
+    @Published private(set) var aiJudgment: Judgment?
+    @Published private(set) var aiReview: Review?
+    @Published private(set) var aiReviewLoading = false
+    @Published private(set) var aiError: String?
+    private(set) var windows: [WindowSummary] = []
+    private(set) var judgments: [Judgment] = []
+    private var lastJudgeAt: TimeInterval = 0
 
     // MARK: - 授权
 
@@ -112,6 +129,12 @@ final class FocusSession: NSObject, ObservableObject {
                 self.awaySeconds = 0
                 self.steps = 0
                 self.awayEndedAt = nil
+                self.aiJudgment = nil
+                self.aiReview = nil
+                self.aiError = nil
+                self.windows = []
+                self.judgments = []
+                self.lastJudgeAt = 0
                 self.startDate = now
                 self.startActivityTracking(from: now)
                 self.phase = .calibrating
@@ -138,14 +161,63 @@ final class FocusSession: NSObject, ObservableObject {
         }
         workoutSession = nil
         builder = nil
+        await MainActor.run {
+            self.phase = .finished
+            self.aiReviewLoading = true
+        }
+        await requestReview()
         saveSamples()
-        await MainActor.run { self.phase = .finished }
     }
 
     func reset() { phase = .idle }
 
-    /// 手动打标签：下一秒的记录会带上它
-    func mark(_ label: String) { pendingLabel = label }
+    /// 手动打标签：下一秒的记录会带上它；同时把最近 1 分钟存成你的 few-shot 例子
+    func mark(_ label: String) {
+        pendingLabel = label
+        guard let startDate, !samples.isEmpty else { return }
+        let window = WindowSummary.make(from: Array(samples.suffix(60)), baseline: scorer.baselineHR, sessionStart: startDate)
+        LabelStore.add(LabeledExample(window: window, label: label))
+    }
+
+    // MARK: - AI
+
+    /// 每 judgeInterval 秒把这段数据汇总发给后端
+    private func requestJudgment() {
+        guard let startDate else { return }
+        let n = Int(AIConfig.judgeInterval)
+        let window = WindowSummary.make(from: Array(samples.suffix(n)), baseline: scorer.baselineHR, sessionStart: startDate)
+        windows.append(window)
+        let recent = judgments
+        Task {
+            do {
+                let j = try await AIClient.judge(window: window, recent: recent)
+                await MainActor.run {
+                    self.judgments.append(j)
+                    self.aiJudgment = j
+                    self.aiError = nil
+                }
+            } catch {
+                await MainActor.run { self.aiError = "AI 暂时连不上" }
+            }
+        }
+    }
+
+    private func requestReview() async {
+        let req = ReviewRequest(
+            durationMinutes: Int(elapsed / 60),
+            averageScore: averageScore,
+            focusedRatio: focusedRatio,
+            awayCount: awayCount,
+            awayMinutes: (awaySeconds / 6).rounded() / 10,
+            windows: windows,
+            judgments: judgments
+        )
+        let review = try? await AIClient.review(req)
+        await MainActor.run {
+            self.aiReview = review
+            self.aiReviewLoading = false
+        }
+    }
 
     // MARK: - 汇总（结束页用）
 
@@ -240,6 +312,11 @@ final class FocusSession: NSObject, ObservableObject {
         samples.append(FocusSample(t: Date(), heartRate: heartRate, motion: motion,
                                    score: scored ? score : nil, label: pendingLabel, away: isAway))
         pendingLabel = nil
+
+        if phase == .running, elapsed - lastJudgeAt >= AIConfig.judgeInterval {
+            lastJudgeAt = elapsed
+            requestJudgment()
+        }
     }
 
     var calibrationSeconds: TimeInterval { scorer.calibrationSeconds }
@@ -281,7 +358,8 @@ final class FocusSession: NSObject, ObservableObject {
             .replacingOccurrences(of: ":", with: "-")
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-        if let data = try? encoder.encode(samples) {
+        let record = SessionRecord(samples: samples, windows: windows, judgments: judgments, review: aiReview)
+        if let data = try? encoder.encode(record) {
             try? data.write(to: dir.appendingPathComponent("\(name).json"))
         }
     }
