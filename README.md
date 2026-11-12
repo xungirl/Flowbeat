@@ -33,6 +33,7 @@ The simulator is fine for UI, but it has no real sensors — use a real watch to
 ## Roadmap
 
 - [x] v0: live score on the watch, calibration, labeling, JSON logging
+- [x] Away detection: walking/running (CMMotionActivityManager) pauses scoring and is not counted as distraction; 60 s heart-rate recovery grace after sitting back down; step count
 - [ ] iPhone companion: sync sessions (WatchConnectivity) and chart your focus timeline
 - [ ] Tune thresholds / train a personal model (Create ML) from labeled sessions
 - [ ] Use system HRV (SDNN) as an extra signal

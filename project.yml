@@ -24,6 +24,7 @@ targets:
         INFOPLIST_KEY_WKWatchOnly: YES
         INFOPLIST_KEY_NSHealthShareUsageDescription: 读取心率，用来估计你是否处于专注状态。
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: 开启专注时段需要启动一个「身心」类体能训练以持续读取心率（结束时不会保存）。
+        INFOPLIST_KEY_NSMotionUsageDescription: 识别你是否起身走动，走动时暂停打分，不算作走神。
     info:
       path: Flowbeat/Info.plist
       properties:

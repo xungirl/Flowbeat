@@ -43,7 +43,13 @@ struct RunningView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 8) {
-                if session.phase == .calibrating {
+                if session.isAway {
+                    Image(systemName: "figure.walk")
+                        .font(.system(size: 40))
+                        .foregroundStyle(.cyan)
+                    Text("离座中").font(.headline)
+                    Text("坐回来后自动继续").font(.footnote).foregroundStyle(.secondary)
+                } else if session.phase == .calibrating {
                     Text("校准中").font(.headline)
                     Text("安静坐着 \(max(0, Int(session.calibrationSeconds - session.elapsed))) 秒")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -95,6 +101,8 @@ struct SummaryView: View {
                 row("时长", timeString(session.elapsed))
                 row("平均分", session.averageScore.map { "\(Int($0))" } ?? "--")
                 row("专注占比", session.focusedRatio.map { "\(Int($0 * 100))%" } ?? "--")
+                row("离座", "\(session.awayCount) 次 · \(timeString(session.awaySeconds))")
+                row("步数", "\(session.steps)")
                 row("记录点", "\(session.samples.count)")
                 Button("完成") { session.reset() }
                     .buttonStyle(.borderedProminent).tint(.mint)

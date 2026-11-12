@@ -10,6 +10,8 @@ struct FocusSample: Codable {
     let score: Double?
     /// 你手动打的标签："focused" / "distracted"，平时为 nil
     let label: String?
+    /// 这一秒是否离座（走路 / 跑步），离座时不打分
+    var away: Bool = false
 }
 
 /// 负责：HealthKit 授权 → 开 workout session 拿实时心率 → CoreMotion 拿手腕动作 → 每秒算一次分。
@@ -27,8 +29,19 @@ final class FocusSession: NSObject, ObservableObject {
     @Published var errorMessage: String?
     @Published private(set) var samples: [FocusSample] = []
 
+    // 离座检测：系统判断你在走路 / 跑步时暂停打分，不算走神
+    @Published var isAway = false
+    @Published private(set) var awayCount = 0
+    @Published private(set) var awaySeconds: TimeInterval = 0
+    @Published private(set) var steps = 0
+    /// 刚坐回来时心率还没降下来，这段时间不按心率扣分
+    private let recoverySeconds: TimeInterval = 60
+    private var awayEndedAt: TimeInterval?
+
     private let healthStore = HKHealthStore()
     private let motionManager = CMMotionManager()
+    private let activityManager = CMMotionActivityManager()
+    private let pedometer = CMPedometer()
     private var workoutSession: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
 
@@ -94,7 +107,13 @@ final class FocusSession: NSObject, ObservableObject {
                 self.score = nil
                 self.elapsed = 0
                 self.motionWindow = []
+                self.isAway = false
+                self.awayCount = 0
+                self.awaySeconds = 0
+                self.steps = 0
+                self.awayEndedAt = nil
                 self.startDate = now
+                self.startActivityTracking(from: now)
                 self.phase = .calibrating
                 self.startMotion()
                 self.startTicking()
@@ -109,6 +128,8 @@ final class FocusSession: NSObject, ObservableObject {
             tickTimer?.invalidate()
             tickTimer = nil
             motionManager.stopDeviceMotionUpdates()
+            activityManager.stopActivityUpdates()
+            pedometer.stopUpdates()
         }
         workoutSession?.end()
         if let builder {
@@ -155,6 +176,36 @@ final class FocusSession: NSObject, ObservableObject {
         }
     }
 
+    /// 系统的活动识别（静止 / 走路 / 跑步）+ 计步。判断有几秒延迟，属正常。
+    private func startActivityTracking(from start: Date) {
+        if CMMotionActivityManager.isActivityAvailable() {
+            activityManager.startActivityUpdates(to: .main) { [weak self] activity in
+                guard let self, let activity, activity.confidence != .low else { return }
+                if activity.walking || activity.running {
+                    self.setAway(true)
+                } else if activity.stationary {
+                    self.setAway(false)
+                }
+            }
+        }
+        if CMPedometer.isStepCountingAvailable() {
+            pedometer.startUpdates(from: start) { [weak self] data, _ in
+                guard let n = data?.numberOfSteps.intValue else { return }
+                DispatchQueue.main.async { self?.steps = n }
+            }
+        }
+    }
+
+    private func setAway(_ away: Bool) {
+        guard away != isAway else { return }
+        isAway = away
+        if away {
+            awayCount += 1
+        } else {
+            awayEndedAt = elapsed
+        }
+    }
+
     private func startTicking() {
         tickTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             self?.tick()
@@ -171,28 +222,49 @@ final class FocusSession: NSObject, ObservableObject {
         #endif
 
         if phase == .calibrating {
-            if let hr = heartRate { scorer.addCalibrationHR(hr) }
+            // 走动时的心率不能当「平静基线」
+            if let hr = heartRate, !isAway { scorer.addCalibrationHR(hr) }
             if elapsed >= scorer.calibrationSeconds, scorer.finishCalibration() {
                 phase = .running
             }
         } else if phase == .running {
-            score = scorer.score(heartRate: heartRate, motion: motion)
+            if isAway {
+                awaySeconds += 1   // 离座：不打分，也不计入专注占比
+            } else {
+                let recovering = awayEndedAt.map { elapsed - $0 < recoverySeconds } ?? false
+                score = scorer.score(heartRate: recovering ? nil : heartRate, motion: motion)
+            }
         }
 
+        let scored = phase == .running && !isAway
         samples.append(FocusSample(t: Date(), heartRate: heartRate, motion: motion,
-                                   score: phase == .running ? score : nil, label: pendingLabel))
+                                   score: scored ? score : nil, label: pendingLabel, away: isAway))
         pendingLabel = nil
     }
 
     var calibrationSeconds: TimeInterval { scorer.calibrationSeconds }
 
     #if targetEnvironment(simulator)
-    /// 模拟器没有真传感器：造「专注 40 秒 → 走神 10 秒」循环的假数据，方便看 demo。真机不会编译这段。
+    /// 模拟器没有真传感器：校准后按 60 秒循环造假数据——专注 35 秒 → 走神 10 秒 → 起身走路 15 秒。
+    /// 真机不会编译这段。
     private func simulateSensors() {
         let afterCalibration = elapsed - scorer.calibrationSeconds
-        let distracted = afterCalibration > 0 && afterCalibration.truncatingRemainder(dividingBy: 50) >= 40
-        heartRate = (distracted ? 86 : 70) + Double.random(in: -2...2)
-        motion = distracted ? Double.random(in: 0.08...0.18) : Double.random(in: 0...0.02)
+        let t = afterCalibration > 0 ? afterCalibration.truncatingRemainder(dividingBy: 60) : 0
+        switch t {
+        case 45...:   // 走路
+            setAway(true)
+            heartRate = 95 + Double.random(in: -3...3)
+            motion = Double.random(in: 0.18...0.30)
+            steps += 2
+        case 35...:   // 坐着走神：抖腿、看手机
+            setAway(false)
+            heartRate = 86 + Double.random(in: -2...2)
+            motion = Double.random(in: 0.08...0.18)
+        default:      // 专注
+            setAway(false)
+            heartRate = 70 + Double.random(in: -2...2)
+            motion = Double.random(in: 0...0.02)
+        }
     }
     #endif
 
