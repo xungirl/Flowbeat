@@ -50,6 +50,12 @@ final class FocusSession: NSObject, ObservableObject {
         let share: Set<HKSampleType> = [HKObjectType.workoutType()]
         do {
             try await healthStore.requestAuthorization(toShare: share, read: read)
+            // 弹窗被关掉 / 点了不允许时，上面不会抛错，要自己再查一次
+            guard healthStore.authorizationStatus(for: HKObjectType.workoutType()) == .sharingAuthorized else {
+                await setError("请允许「健康」权限：设置 → 健康 → 数据访问 → 专注")
+                return false
+            }
+            await MainActor.run { self.errorMessage = nil }
             return true
         } catch {
             await setError("授权失败：\(error.localizedDescription)")

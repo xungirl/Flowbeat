@@ -30,6 +30,8 @@ struct StartView: View {
                 Text(err).font(.footnote).foregroundStyle(.red)
             }
         }
+        // 一打开就先要授权，别等点「开始」才弹
+        .task { _ = await session.requestAuthorization() }
     }
 }
 
