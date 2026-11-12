@@ -17,6 +17,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat
         GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         # 在 Xcode 里 Signing & Capabilities 选你自己的 Team 后会写进这里
         DEVELOPMENT_TEAM: ""
