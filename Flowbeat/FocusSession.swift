@@ -86,6 +86,9 @@ final class FocusSession: NSObject, ObservableObject {
 
             await MainActor.run {
                 self.scorer = FocusScorer()
+                #if targetEnvironment(simulator)
+                self.scorer.calibrationSeconds = 10
+                #endif
                 self.samples = []
                 self.heartRate = nil
                 self.score = nil
@@ -163,6 +166,9 @@ final class FocusSession: NSObject, ObservableObject {
         guard let startDate else { return }
         elapsed = Date().timeIntervalSince(startDate)
         motion = motionWindow.isEmpty ? 0 : motionWindow.reduce(0, +) / Double(motionWindow.count)
+        #if targetEnvironment(simulator)
+        simulateSensors()
+        #endif
 
         if phase == .calibrating {
             if let hr = heartRate { scorer.addCalibrationHR(hr) }
@@ -177,6 +183,18 @@ final class FocusSession: NSObject, ObservableObject {
                                    score: phase == .running ? score : nil, label: pendingLabel))
         pendingLabel = nil
     }
+
+    var calibrationSeconds: TimeInterval { scorer.calibrationSeconds }
+
+    #if targetEnvironment(simulator)
+    /// 模拟器没有真传感器：造「专注 40 秒 → 走神 10 秒」循环的假数据，方便看 demo。真机不会编译这段。
+    private func simulateSensors() {
+        let afterCalibration = elapsed - scorer.calibrationSeconds
+        let distracted = afterCalibration > 0 && afterCalibration.truncatingRemainder(dividingBy: 50) >= 40
+        heartRate = (distracted ? 86 : 70) + Double.random(in: -2...2)
+        motion = distracted ? Double.random(in: 0.08...0.18) : Double.random(in: 0...0.02)
+    }
+    #endif
 
     // MARK: - 存档
 

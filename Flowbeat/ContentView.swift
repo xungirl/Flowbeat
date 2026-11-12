@@ -45,7 +45,7 @@ struct RunningView: View {
             VStack(spacing: 8) {
                 if session.phase == .calibrating {
                     Text("校准中").font(.headline)
-                    Text("安静坐着 \(max(0, 60 - Int(session.elapsed))) 秒")
+                    Text("安静坐着 \(max(0, Int(session.calibrationSeconds - session.elapsed))) 秒")
                         .font(.footnote).foregroundStyle(.secondary)
                 } else {
                     Text(session.score.map { "\(Int($0))" } ?? "--")
