@@ -1,0 +1,36 @@
+name: FocusWatch
+options:
+  bundleIdPrefix: com.xungirl
+  deploymentTarget:
+    watchOS: "10.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  FocusWatch:
+    type: application
+    platform: watchOS
+    sources: [FocusWatch]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.focuswatch
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        # 在 Xcode 里 Signing & Capabilities 选你自己的 Team 后会写进这里
+        DEVELOPMENT_TEAM: ""
+        INFOPLIST_KEY_CFBundleDisplayName: 专注
+        INFOPLIST_KEY_WKWatchOnly: YES
+        INFOPLIST_KEY_NSHealthShareUsageDescription: 读取心率，用来估计你是否处于专注状态。
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: 开启专注时段需要启动一个「身心」类体能训练以持续读取心率（结束时不会保存）。
+    info:
+      path: FocusWatch/Info.plist
+      properties:
+        WKApplication: true
+        WKBackgroundModes: [workout-processing]
+    entitlements:
+      path: FocusWatch/FocusWatch.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
