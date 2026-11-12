@@ -18,7 +18,7 @@ Blood oxygen is intentionally not used: third-party apps can't trigger SpO₂ re
 
 ## AI judge (backend + LLM)
 
-Every 2 minutes the watch sends a compact **window summary** (HR mean/trend vs. baseline, wrist stillness, away time, rule score) to a small FastAPI backend, which asks an LLM — **Qwen (qwen-plus)** or **Claude Haiku 5.5**, switchable with `LLM_PROVIDER` — for `{state, score, reason}`. Your own **focused/distracted labels** (last 20, stored on the watch) are sent along as few-shot examples, so the model judges against *your* body rather than generic thresholds — useful when there isn't enough data to train a model yet. At the end of a session the backend returns a short AI review and one tip.
+Every 2 minutes the watch sends a compact **window summary** (HR mean/trend vs. baseline, wrist stillness, away time, rule score) to a small FastAPI backend, which asks an LLM — **Qwen (qwen3.8-flash)** or **Claude Haiku 5.5**, switchable with `LLM_PROVIDER` — for `{state, score, reason}`. Your own **focused/distracted labels** (last 20, stored on the watch) are sent along as few-shot examples, so the model judges against *your* body rather than generic thresholds — useful when there isn't enough data to train a model yet. At the end of a session the backend returns a short AI review and one tip.
 
 The per-second score stays rule-based and on-device; the LLM adds a periodic second opinion and works offline-tolerant (the watch keeps working if the backend is unreachable).
 
@@ -54,7 +54,7 @@ The simulator is fine for UI, but it has no real sensors — use a real watch to
 - [ ] Tune thresholds / train a personal model (Create ML) from labeled sessions
 - [ ] Use system HRV (SDNN) as an extra signal
 - [x] LLM judge every 2 min with few-shot personalization + end-of-session AI review (Claude Haiku 5.5)
-- [x] Qwen (通义千问, qwen-plus via DashScope OpenAI-compatible API) provider — current default
+- [x] Qwen (通义千问, qwen3.8-flash via DashScope OpenAI-compatible API) provider — current default
 - [ ] Deploy backend to Cloud Run (HTTPS)
 - [ ] Integrate with [Nod](https://github.com/xungirl/Nod): hold notifications while you're in flow
 

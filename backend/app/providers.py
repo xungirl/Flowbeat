@@ -92,7 +92,7 @@ class QwenProvider:
             timeout=30.0,
             max_retries=2,
         )
-        self.model = model or os.getenv("QWEN_MODEL", "qwen-plus")
+        self.model = model or os.getenv("QWEN_MODEL", "qwen3.8-flash")
 
     async def _json(self, system: str, user: str, schema):
         # 千问的 JSON 模式只保证「是 JSON」，所以在提示词里写明字段，再用 Pydantic 校验
