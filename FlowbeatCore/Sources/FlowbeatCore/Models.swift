@@ -5,7 +5,7 @@ import Foundation
 // 字段名的一致性由 contract/window_summary_fields.json 在 Swift 和 Python 两边各测一次。
 
 /// 一个时间点的记录。存成 JSON，以后拿来画曲线、训练你自己的模型。
-public struct FocusSample: Codable, Equatable {
+public struct FocusSample: Codable, Equatable, Sendable {
     public let t: Date
     public let heartRate: Double?
     public let motion: Double
@@ -26,21 +26,36 @@ public struct FocusSample: Codable, Equatable {
 }
 
 /// 一次专注的完整存档：逐秒样本 + AI 窗口摘要 + AI 判断 + 复盘
-public struct SessionRecord: Codable, Equatable {
+public struct SessionRecord: Codable, Equatable, Sendable {
     public let samples: [FocusSample]
     public let windows: [WindowSummary]
     public let judgments: [Judgment]
     public let review: Review?
+    /// 每个判断属于第几分钟的窗口（离线排队后判断可能晚到，靠这个对齐时间轴）。旧存档没有这个字段。
+    public let timeline: [JudgedWindow]?
 
-    public init(samples: [FocusSample], windows: [WindowSummary], judgments: [Judgment], review: Review?) {
+    public init(samples: [FocusSample], windows: [WindowSummary], judgments: [Judgment], review: Review?,
+                timeline: [JudgedWindow]? = nil) {
         self.samples = samples
         self.windows = windows
         self.judgments = judgments
         self.review = review
+        self.timeline = timeline
     }
 }
 
-public struct WindowSummary: Codable, Equatable {
+/// 一个窗口的 AI 判断，带上窗口所在的分钟
+public struct JudgedWindow: Codable, Equatable, Sendable {
+    public let minute: Int
+    public let judgment: Judgment
+
+    public init(minute: Int, judgment: Judgment) {
+        self.minute = minute
+        self.judgment = judgment
+    }
+}
+
+public struct WindowSummary: Codable, Equatable, Sendable {
     public var minuteOfSession: Int
     public var localTime: String
     public var baselineHr: Double?
@@ -106,7 +121,7 @@ public struct WindowSummary: Codable, Equatable {
 func round1(_ x: Double) -> Double { (x * 10).rounded() / 10 }
 func round3(_ x: Double) -> Double { (x * 1000).rounded() / 1000 }
 
-public struct Judgment: Codable, Equatable {
+public struct Judgment: Codable, Equatable, Sendable {
     public var state: String   // focused / distracted / away / unclear
     public var score: Int
     public var reason: String
@@ -121,7 +136,7 @@ public struct Judgment: Codable, Equatable {
     }
 }
 
-public struct LabeledExample: Codable, Equatable {
+public struct LabeledExample: Codable, Equatable, Sendable {
     public var window: WindowSummary
     public var label: String   // focused / distracted
 
@@ -139,7 +154,7 @@ public struct LabeledExample: Codable, Equatable {
     }
 }
 
-public struct Review: Codable, Equatable {
+public struct Review: Codable, Equatable, Sendable {
     public var summary: String
     public var tip: String
     /// "llm" 或 "fallback"（模型不可用时后端按统计数字拼的总结）
@@ -152,7 +167,7 @@ public struct Review: Codable, Equatable {
     }
 }
 
-public struct JudgeRequest: Codable, Equatable {
+public struct JudgeRequest: Codable, Equatable, Sendable {
     public var window: WindowSummary
     public var examples: [LabeledExample]
     public var recent: [Judgment]
@@ -164,7 +179,7 @@ public struct JudgeRequest: Codable, Equatable {
     }
 }
 
-public struct ReviewRequest: Codable, Equatable {
+public struct ReviewRequest: Codable, Equatable, Sendable {
     public var durationMinutes: Int
     public var averageScore: Double?
     public var focusedRatio: Double?

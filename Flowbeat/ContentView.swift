@@ -103,9 +103,16 @@ struct StartView: View {
         }
         .containerBackground(Color.mint.gradient.opacity(0.22), for: .navigation)
         #if targetEnvironment(simulator)
-        // 模拟器带 -demo 启动参数时自动开始，方便截图检查界面
+        // 模拟器带 -demo 启动参数时自动开始，方便截图检查界面；
+        // 再加 -demoStopAfter <秒> 会自动结束并存档（用来生成 iPhone 端的示例 session）
         .task {
-            if ProcessInfo.processInfo.arguments.contains("-demo") { await session.start() }
+            let args = ProcessInfo.processInfo.arguments
+            guard args.contains("-demo") else { return }
+            await session.start()
+            if let i = args.firstIndex(of: "-demoStopAfter"), i + 1 < args.count, let secs = Double(args[i + 1]) {
+                try? await Task.sleep(nanoseconds: UInt64(secs * 1_000_000_000))
+                await session.stop()
+            }
         }
         #endif
     }
@@ -235,6 +242,8 @@ struct AILine: View {
     }
 
     private var text: String {
+        // 离线排队时优先告诉用户，否则会一直显示一条过时的理由
+        if session.pendingJudgments > 0, let e = session.aiError { return e }
         if let j = session.aiJudgment { return j.reason }
         if let e = session.aiError { return e }
         return session.phase == .calibrating ? "AI 等待校准完成" : "AI 正在观察…"

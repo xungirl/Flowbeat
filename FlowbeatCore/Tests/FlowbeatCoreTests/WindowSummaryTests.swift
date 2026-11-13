@@ -83,6 +83,14 @@ final class WindowSummaryTests: XCTestCase {
         XCTAssertEqual(try FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data), r)
     }
 
+    func testOldSessionFilesWithoutTimelineStillDecode() throws {
+        let old = #"{"samples":[],"windows":[],"judgments":[{"state":"focused","score":90,"reason":"x"}]}"#
+        let r = try FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: Data(old.utf8))
+        XCTAssertNil(r.timeline)
+        XCTAssertNil(r.review)
+        XCTAssertEqual(r.judgments.count, 1)
+    }
+
     func testLabeledExamplesAreCappedKeepingNewest() {
         let w = WindowSummary(minuteOfSession: 0, localTime: "00:00", motionMean: 0, motionMax: 0, stillRatio: 1, awaySeconds: 0)
         var list: [LabeledExample] = []

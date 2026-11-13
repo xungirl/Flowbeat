@@ -95,7 +95,8 @@ async def judge(req: JudgeRequest, request: Request, provider: Provider = Depend
     out = await resilience.call_with_retry(lambda: provider.judge(req), settings, "judge")
     result = out.value or resilience.fallback_judgment(req.window)
     request.state.log.update(op="judge", provider=provider.name, source=result.source, attempts=out.attempts,
-                             llm_ms=out.latency_ms, examples=len(req.examples), error=out.error)
+                             llm_ms=out.latency_ms, examples=len(req.examples), minute=req.window.minute_of_session,
+                             error=out.error)
     return result
 
 

@@ -31,9 +31,9 @@ enum AIClient {
     private static let encoder = FlowbeatJSON.encoder
     private static let decoder = FlowbeatJSON.decoder
 
-    static func judge(window: WindowSummary, recent: [Judgment]) async throws -> Judgment {
-        let req = JudgeRequest(window: window, examples: LabelStore.examples, recent: Array(recent.suffix(3)))
-        return try await post("/v1/judge", req)
+    /// 失败时抛 HTTPStatusError（后端返回非 200）或 URLError（连不上 / 超时），JudgeSync 据此决定丢弃还是排队重试
+    static func judge(_ req: JudgeRequest) async throws -> Judgment {
+        try await post("/v1/judge", req)
     }
 
     static func review(_ req: ReviewRequest) async throws -> Review {
@@ -48,9 +48,8 @@ enum AIClient {
         if let t = AIConfig.token { r.setValue(t, forHTTPHeaderField: "X-Flowbeat-Token") }
         r.httpBody = try encoder.encode(body)
         let (data, resp) = try await URLSession.shared.data(for: r)
-        guard let http = resp as? HTTPURLResponse, http.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
+        guard let http = resp as? HTTPURLResponse else { throw URLError(.badServerResponse) }
+        guard http.statusCode == 200 else { throw HTTPStatusError(code: http.statusCode) }
         return try decoder.decode(Out.self, from: data)
     }
 }

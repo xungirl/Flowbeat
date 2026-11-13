@@ -48,7 +48,12 @@ final class FocusSession: NSObject, ObservableObject {
     @Published private(set) var aiError: String?
     private(set) var windows: [WindowSummary] = []
     private(set) var judgments: [Judgment] = []
+    private(set) var timeline: [JudgedWindow] = []
     private var lastJudgeAt: TimeInterval = 0
+    /// 所有判断请求都走这个队列：在线时等于直接发；连不上后端时排队，按 15 s → 30 s → … ≤ 5 min 退避重试，最多 30 条
+    private var sync = JudgeSync { try await AIClient.judge($0) }
+    /// 还在排队等发送的窗口数（> 0 时 UI 显示「离线」）
+    @Published private(set) var pendingJudgments = 0
 
     // MARK: - 授权
 
@@ -113,6 +118,9 @@ final class FocusSession: NSObject, ObservableObject {
                 self.aiError = nil
                 self.windows = []
                 self.judgments = []
+                self.timeline = []
+                self.sync = JudgeSync { try await AIClient.judge($0) }   // 每次专注一个新队列
+                self.pendingJudgments = 0
                 self.lastJudgeAt = 0
                 self.startDate = now
                 self.startActivityTracking(from: now)
@@ -144,6 +152,9 @@ final class FocusSession: NSObject, ObservableObject {
             self.phase = .finished
             self.aiReviewLoading = true
         }
+        // 结束前把排队的窗口最后试一次（不等退避），这样复盘能用上尽量多的判断
+        let final = await sync.flush(ignoringBackoff: true)
+        await MainActor.run { self.apply(final) }
         await requestReview()
         saveSamples()
     }
@@ -166,18 +177,38 @@ final class FocusSession: NSObject, ObservableObject {
         let n = Int(AIConfig.judgeInterval)
         let window = WindowSummary.make(from: Array(samples.suffix(n)), baseline: engine.baselineHR, sessionStart: startDate)
         windows.append(window)
-        let recent = judgments
+        let req = JudgeRequest(window: window, examples: LabelStore.examples, recent: Array(judgments.suffix(3)))
+        let sync = self.sync
         Task {
-            do {
-                let j = try await AIClient.judge(window: window, recent: recent)
-                await MainActor.run {
-                    self.judgments.append(j)
-                    self.aiJudgment = j
-                    self.aiError = nil
-                }
-            } catch {
-                await MainActor.run { self.aiError = "AI 暂时连不上" }
-            }
+            let result = await sync.submit(req)
+            await MainActor.run { self.apply(result) }
+        }
+    }
+
+    /// 离线期间每 5 秒看一眼：退避时间到了就重发（没到时 flush 立刻返回，不发请求）
+    private func retryPendingIfNeeded() {
+        guard pendingJudgments > 0, Int(elapsed) % 5 == 0 else { return }
+        let sync = self.sync
+        Task {
+            let result = await sync.flush()
+            await MainActor.run { self.apply(result) }
+        }
+    }
+
+    /// 把送达的判断按窗口顺序记下来；最新窗口的判断显示在圆环下面
+    @MainActor private func apply(_ result: SyncResult) {
+        for d in result.delivered {
+            judgments.append(d.judgment)
+            timeline.append(JudgedWindow(minute: d.request.window.minuteOfSession, judgment: d.judgment))
+            if d.request.window == windows.last { aiJudgment = d.judgment }
+        }
+        pendingJudgments = result.pending
+        if result.pending > 0 {
+            aiError = "AI 离线 · 排队 \(result.pending) 条"
+        } else if result.lastError != nil && result.delivered.isEmpty {
+            aiError = "AI 暂时连不上"
+        } else {
+            aiError = nil
         }
     }
 
@@ -275,6 +306,8 @@ final class FocusSession: NSObject, ObservableObject {
         if phase == .running, elapsed - lastJudgeAt >= AIConfig.judgeInterval {
             lastJudgeAt = elapsed
             requestJudgment()
+        } else {
+            retryPendingIfNeeded()
         }
     }
 
@@ -316,7 +349,8 @@ final class FocusSession: NSObject, ObservableObject {
         let name = ISO8601DateFormatter().string(from: samples[0].t)
             .replacingOccurrences(of: ":", with: "-")
         let encoder = FlowbeatJSON.sessionEncoder
-        let record = SessionRecord(samples: samples, windows: windows, judgments: judgments, review: aiReview)
+        let record = SessionRecord(samples: samples, windows: windows, judgments: judgments, review: aiReview,
+                                   timeline: timeline)
         if let data = try? encoder.encode(record) {
             try? data.write(to: dir.appendingPathComponent("\(name).json"))
         }
