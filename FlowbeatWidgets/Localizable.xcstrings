@@ -1,0 +1,76 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld-day streak": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连续 %lld 天达标"
+          }
+        }
+      }
+    },
+    "/ %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ %lld 分钟"
+          }
+        }
+      }
+    },
+    "Focus %lld/%lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注 %1$lld/%2$lld 分钟"
+          }
+        }
+      }
+    },
+    "Focus today": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日专注"
+          }
+        }
+      }
+    },
+    "Focused minutes today and progress toward your daily goal.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天的专注分钟数和每日目标进度。"
+          }
+        }
+      }
+    },
+    "Focused today: %lld of %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天已专注 %1$lld 分钟，目标 %2$lld 分钟"
+          }
+        }
+      }
+    },
+    "min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分钟"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

@@ -37,11 +37,15 @@ struct ContentView: View {
                 }
             } else {
                 NavigationStack {
-                    switch session.phase {
-                    case .idle: StartView()
-                    case .calibrating, .running: RunningView()
-                    case .finished: SummaryView()
+                    #if targetEnvironment(simulator)
+                    if ProcessInfo.processInfo.arguments.contains("-widgetGallery") {
+                        WidgetGalleryView()
+                    } else {
+                        phaseView
                     }
+                    #else
+                    phaseView
+                    #endif
                 }
             }
         }
@@ -51,11 +55,20 @@ struct ContentView: View {
         }
     }
 
+    @ViewBuilder private var phaseView: some View {
+        switch session.phase {
+        case .idle: StartView()
+        case .calibrating, .running: RunningView()
+        case .finished: SummaryView()
+        }
+    }
+
     static func needsOnboarding() -> Bool {
         #if targetEnvironment(simulator)
         // 演示模式（-demo）直接进开始页，方便自动化截图
         let args = ProcessInfo.processInfo.arguments
-        if args.contains("-demo") || args.contains("-demoDenied") || args.contains("-demoHistory") { return false }
+        if args.contains("-demo") || args.contains("-demoDenied") || args.contains("-demoHistory")
+            || args.contains("-widgetGallery") { return false }
         #endif
         return OnboardingState(store: UserDefaults.standard).needsOnboarding
     }

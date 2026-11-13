@@ -35,8 +35,12 @@ targetTemplates:
     platform: watchOS
     sources:
       - path: Flowbeat
+      # 小组件视图和共享文件读写：app 里也编译一份（写快照、模拟器预览页）
+      - path: FlowbeatWidgets/Shared
     dependencies:
       - package: FlowbeatCore
+      # 表盘复杂功能 / 智能叠放小组件，嵌进手表 app 的 PlugIns/
+      - target: FlowbeatWidgets
     settings:
       base:
         PRODUCT_NAME: Flowbeat
@@ -71,6 +75,8 @@ targetTemplates:
       properties:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
+        # 和小组件共享 widget-snapshot.json。App Group 要在开发者后台用 Team ID 注册（见 submission-checklist.md）
+        com.apple.security.application-groups: [group.com.xungirl.flowbeat]
 
 targets:
   # v1 上架用：独立手表 app
@@ -88,6 +94,38 @@ targets:
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.xungirl.flowbeat
         # 有 iPhone 伴侣（同步、画图），但手表 app 不依赖它也能独立运行
         INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
+  # WidgetKit 扩展：今天的专注分钟数 + 每日目标进度（accessoryCircular / Rectangular / Inline / Corner）
+  FlowbeatWidgets:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: FlowbeatWidgets
+        excludes: ["Shared/**"]
+      - path: FlowbeatWidgets/Shared
+    dependencies:
+      - package: FlowbeatCore
+      - sdk: WidgetKit.framework
+      - sdk: SwiftUI.framework
+    settings:
+      base:
+        PRODUCT_NAME: FlowbeatWidgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat.watchkitapp.widgets
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Flowbeat
+        CODE_SIGN_STYLE: Automatic
+        SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: ""
+    info:
+      path: FlowbeatWidgets/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: FlowbeatWidgets/FlowbeatWidgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.xungirl.flowbeat]
   FlowbeatPhone:
     type: application
     platform: iOS

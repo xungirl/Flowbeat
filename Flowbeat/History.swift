@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 import FlowbeatCore
 
 /// 历史统计的数据源：存档目录 → 摘要缓存（FlowbeatCore.DigestStore）→ HistorySummary。
@@ -27,7 +28,7 @@ final class HistoryStore: ObservableObject {
         let goal = Self.dailyGoalMinutes
         #if targetEnvironment(simulator)
         if ProcessInfo.processInfo.arguments.contains("-demoHistory") {
-            apply(Self.demoDigests(), goal: goal)
+            apply(Self.demoDigests(), goal: goal, writeSnapshot: false)
             return
         }
         #endif
@@ -38,9 +39,17 @@ final class HistoryStore: ObservableObject {
         }
     }
 
-    private func apply(_ list: [SessionDigest], goal: Int) {
+    private func apply(_ list: [SessionDigest], goal: Int, writeSnapshot: Bool = true) {
+        let now = Date()
         digests = list
-        summary = FocusHistory.summary(list, now: Date(), calendar: .current, dailyGoalMinutes: goal)
+        summary = FocusHistory.summary(list, now: now, calendar: .current, dailyGoalMinutes: goal)
+        // 给表盘小组件：写共享快照，只有内容变了才让 WidgetKit 重新要时间线（reload 有每日预算）
+        guard writeSnapshot else { return }
+        let snapshot = WidgetSnapshot.make(from: list, now: now, dailyGoalMinutes: goal)
+        let old = SnapshotFile.read()
+        if old?.buckets != snapshot.buckets || old?.dailyGoalMinutes != goal, SnapshotFile.write(snapshot) {
+            WidgetCenter.shared.reloadAllTimelines()
+        }
     }
 
     #if targetEnvironment(simulator)

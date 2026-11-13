@@ -34,16 +34,19 @@ for config in Debug Release; do
   conds=$(xcodebuild -project Flowbeat.xcodeproj -target Flowbeat -configuration "$config" -showBuildSettings 2>/dev/null \
           | awk -F' = ' '/ SWIFT_ACTIVE_COMPILATION_CONDITIONS /{print $2}')
   app="$DD/Build/Products/$config-watchsimulator/Flowbeat.app"
-  # Debug builds put the code in Flowbeat.debug.dylib; scan every Mach-O in the bundle
-  # (macOS `strings` must be given files, not stdin, to scan every Mach-O section)
+  # Debug builds put the code in Flowbeat.debug.dylib; scan every Mach-O in the bundle, including the
+  # widget extension (PlugIns/FlowbeatWidgets.appex). macOS `strings` must be given files, not stdin,
+  # to scan every Mach-O section.
   dump=$(mktemp)
-  find "$app" -type f \( -name Flowbeat -o -name '*.dylib' \) -exec strings -a {} \; > "$dump"
+  find "$app" -type f \( -name Flowbeat -o -name FlowbeatWidgets -o -name '*.dylib' \) -exec strings -a {} \; > "$dump"
+  machos=$(find "$app" -type f \( -name Flowbeat -o -name FlowbeatWidgets -o -name '*.dylib' \) | wc -l | tr -d ' ')
   found=()
   for m in "${MARKERS[@]}"; do
     if grep -qF -- "$m" "$dump"; then found+=("$m"); fi
   done
   rm -f "$dump"
   echo "[$config] conditions: ${conds:-<none>}"
+  echo "[$config] Mach-O files scanned: $machos"
   echo "[$config] markers found: ${#found[@]}/${#MARKERS[@]} ${found[*]:-}"
   if [ "$config" = Release ]; then
     if [[ " $conds " == *" FLOWBEAT_AI "* ]]; then echo "FAIL: Release compiles FLOWBEAT_AI"; fail=1; fi

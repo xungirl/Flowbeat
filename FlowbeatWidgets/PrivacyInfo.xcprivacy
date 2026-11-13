@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Flowbeat widget extension privacy manifest.
+  - No tracking, no collected data, no network code.
+  - Reads one JSON file (widget-snapshot.json: focused seconds per 15 minutes, daily goal) from the
+    App Group container that the watch app writes. Plain file read: no UserDefaults, no file
+    timestamp, boot time, disk space or keyboard APIs, so there are no required-reason APIs to declare.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

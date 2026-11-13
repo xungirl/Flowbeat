@@ -67,6 +67,16 @@
     "--": {
       "shouldTranslate": false
     },
+    "/ %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "/ %lld 分钟"
+          }
+        }
+      }
+    },
     "A bit distracted": {
       "localizations": {
         "zh-Hans": {
@@ -447,12 +457,32 @@
         }
       }
     },
+    "Focus %lld/%lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注 %1$lld/%2$lld 分钟"
+          }
+        }
+      }
+    },
     "Focus score": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "专注指数"
+          }
+        }
+      }
+    },
+    "Focus today": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日专注"
           }
         }
       }
@@ -473,6 +503,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "最近 7 天的专注分钟数"
+          }
+        }
+      }
+    },
+    "Focused today: %lld of %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天已专注 %1$lld 分钟，目标 %2$lld 分钟"
           }
         }
       }
@@ -893,6 +933,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "今天 %lld 分钟"
+          }
+        }
+      }
+    },
+    "Watch face widgets": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "表盘小组件"
           }
         }
       }
