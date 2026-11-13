@@ -5,6 +5,8 @@
 > 力气花在前两层，语法层看懂即可。
 >
 > **先说清楚边界（面试时主动讲）：** 这个 app **从没在真手表上跑过**。所有端到端验证都在 watchOS 模拟器的演示模式里（传感器是模拟的）；iPhone app 只在 GitHub Actions 的 iOS 模拟器上构建、截图过；专注分数**没有**和任何真实标注数据比对过。下面写的每一个数字都能在仓库里找到出处。
+>
+> **v1 上架状态（2026-11-13）：** 代码、配置、文档都准备好了（第五部分）：手表独立 app、完全本地、不联网，AI 判断只在 Debug 版里。还没签名、没在真机上测、没提交，开发者账号还在审核。
 
 ---
 
@@ -132,7 +134,7 @@ CoreMotion 加速度 ├─ 每秒 FocusEngine.tick ─ 圆环分数   │ /v1/j
 - **为什么永久错误直接丢？** 422（数据被校验拒绝）重试 100 次也是 422，不能让一条坏数据堵住后面所有窗口。另外每条最多 8 次，防止「毒消息」。
 - **为什么不加随机抖动（jitter）？** jitter 是为了避免成千上万客户端同时重试造成惊群；这里是一块手表对一个后端，不需要。面试时可以主动说这是有意的取舍。
 - **为什么用 actor？** `submit` 里 `await send(...)` 时会挂起，另一个 `submit` 可能同时进来；actor + `isFlushing` 标记保证同一条不会被发两遍（`testConcurrentSubmitsNeverSendTheSameWindowTwice`）。
-- **局限**：队列只在内存里，app 被杀掉时没发出去的判断就丢了（窗口本身还在 `SessionRecord.windows` 里）。
+- **（后来补上）落盘**：队列每次变化都通过 `onChange` 原子写进 Application Support，app 被杀掉后下次启动接着发，详见第 21 节。
 
 **(c) 语法**
 - 泛型 `struct OfflineQueue<Item: Codable & Equatable & Sendable>`：协议组合约束。
@@ -191,9 +193,11 @@ CoreMotion 加速度 ├─ 每秒 FocusEngine.tick ─ 圆环分数   │ /v1/j
 
 ### 8. `Flowbeat/AIJudge.swift`：网络和标注存储
 
+> v1 上架版里**这个文件根本不编译**（整个文件包在 `#if FLOWBEAT_AI` 里，只有 Debug 配置有这个条件），见第 19 节。
+
 **(a) 骨架**
 - `AIConfig`：后端地址（模拟器 `localhost:8765`，真机填 Mac 的 `.local` 名）、口令、判断间隔。
-- `AIClient.post`：JSON POST，带 `X-Flowbeat-Token`；非 200 抛 `HTTPStatusError(code)`，连不上抛 `URLError`。
+- `HTTPJudgeTransport.post`（以前叫 `AIClient`，现在遵守 Core 里的 `JudgeTransport` 协议）：JSON POST，带 `X-Flowbeat-Token`；非 200 抛 `HTTPStatusError(code)`，连不上抛 `URLError`。
 - `LabelStore`：用 `UserDefaults` 存最近 20 条标注例子，跨 session 保留。
 
 **(b) 为什么**
@@ -321,11 +325,123 @@ CoreMotion 加速度 ├─ 每秒 FocusEngine.tick ─ 圆环分数   │ /v1/j
 - Python：`backend/tests/`，全部用 Fake / Scripted provider，不调真模型。
 - `project.yml`（XcodeGen）：`.xcodeproj` 不进 git，改 yml 再 `xcodegen generate`；scheme 的 test 直接引用 package 的测试 target。
 - `backend/Dockerfile`：两阶段，builder 用 uv 按 `uv.lock` 装依赖，运行镜像只有 `.venv` + 代码、非 root 用户、`HEALTHCHECK` 打 `/healthz`。本机没有 Docker，所以镜像只在 CI 里构建和冒烟测试过。
-- `.github/workflows/ci.yml`：后端 pytest、Docker 构建和容器冒烟（无口令启动必须失败、有口令 200）、macOS 上 `swift test`、watchOS 模拟器测试 + iPhone app 构建 + iOS 模拟器截图。
+- `.github/workflows/ci.yml`：后端 pytest、Docker 构建和容器冒烟（无口令启动必须失败、有口令 200）、macOS 上 `swift test`、watchOS 模拟器测试、Release 不联网检查（`verify_release_offline.sh`）、iPhone app Debug + Release 构建、iOS 模拟器截图。
+- `apps` 这个 job 用 `shell: bash`，这样会带上 `pipefail`。以前 `xcodebuild ... | tail` 失败时，退出码是 `tail` 的 0，测试挂了 CI 也是绿的。
+- 测试数（2026-11-13）：Swift 102 个（macOS 和 watchOS 11.4 模拟器各跑一遍）、后端 48 个。
 
 ---
 
-## 第五部分：面试题和回答
+## 第五部分：上架准备（v1）
+
+v1 的产品决定：**手表优先、完全本地、不联网**。上架版只有规则分、离座检测、标签和总结；AI 判断留在 Debug 版里当开发功能。下面五节是为上架做的改动，同样按「骨架 / 为什么 / 语法」三层。**这些都还没在真手表上验证过，也还没签名、没提交。**
+
+### 19. 功能开关：`FLOWBEAT_AI`（`project.yml`、`AppFeatures.swift`、`FeatureFlags.swift`）
+
+**(a) 骨架**
+- `project.yml` 里手表 target 的 Debug 配置：`SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG FLOWBEAT_AI`；Release 没有。
+- `AIJudge.swift` 整个文件包在 `#if FLOWBEAT_AI ... #endif` 里：后端地址、口令、HTTP 客户端（`HTTPJudgeTransport`）、few-shot 标注存储，Release 里都不存在。
+- 第二道闸（运行时）：网络客户端只能通过 `FeatureFlags.judgeTransport { ... }` 构造，开关关着时工厂闭包**根本不被调用**。`FocusSession` 拿到的 `transport` 是 nil，于是 `sync` 也是 nil：不发判断、不发复盘、不读 HRV、AI 那一行 UI 不显示。
+- `scripts/verify_release_offline.sh`：Debug 和 Release 各构建一次，用 `strings` 扫 app 包里每个 Mach-O 文件，找 6 个标记（`localhost:8765`、`/v1/judge`、`/v1/review`、`HTTPJudgeTransport`、`AIConfig`、`labeledExamples`）。Release 必须 0 个，Debug 必须 6 个都在（证明扫描本身有效）。本地结果 Debug 6/6、Release 0/6，CI 每次 push 都跑。
+
+**(b) 为什么**
+- **为什么用编译条件，而不是运行时的开关（比如 UserDefaults 里一个 Bool）？** 运行时开关意味着联网代码还在二进制里，审核和隐私标签都要按「可能联网」来回答。编译掉之后，「Data Not Collected」是可以证明的事实，而不是承诺。
+- **为什么还要运行时的那道闸？** 编译条件只管「有没有」，闸管「能不能构造」：以后有人不小心把客户端编进了 Release，开关关着也不会发请求。而且这一层是纯逻辑，可以单元测试（`FeatureFlagsTests`：开关关 → 工厂调用 0 次）。
+- **为什么要「Debug 必须有标记」这个反向检查？** 不然扫错了，Release 的「0 个」也会显示通过。真踩过两次：
+  - Xcode 16 的 Debug 构建把代码放进了 `Flowbeat.debug.dylib`，只扫主二进制什么都找不到；
+  - 第一版脚本把文件 `cat` 进管道给 `strings`，macOS 的 `strings` 从 stdin 读时不扫 Mach-O 的数据段，Debug 也是 0 个。
+  
+  另外两个本来想用的标记（`YOUR-MAC.local` 只在真机代码里；口令请求头在 token 为 nil 时没进二进制）在模拟器 Debug 里本来就不存在，所以换掉了。
+- 顺带的数据最小化：HRV 只给 AI 摘要用，所以 Release 连 HRV 的读取权限都不申请。
+
+**(c) 语法**
+- `#if FLOWBEAT_AI` / `#else` / `#endif`：编译期条件，没定义的分支不参与编译。
+- `SWIFT_ACTIVE_COMPILATION_CONDITIONS` 和 `$(inherited)`：在 XcodeGen 里按配置写 build setting。
+- `any JudgeTransport`：存在类型（existential），存「某个遵守协议的值」。
+- actor 的委托初始化器：`extension JudgeSync { init(transport:...) { self.init(...) } }`，actor 不需要写 `convenience`。
+
+### 20. 隐私清单：`PrivacyInfo.xcprivacy`
+
+**(a) 骨架**：手表 target 和 iPhone target 各一份。`NSPrivacyTracking = false`、`NSPrivacyTrackingDomains` 和 `NSPrivacyCollectedDataTypes` 都是空数组；`NSPrivacyAccessedAPITypes` 只声明 `UserDefaults`（理由码 `CA92.1`：只读写本 app 自己的数据，用在首次启动是否看过说明，Debug 版还有标注存储）。iPhone 端一个 required-reason API 都没用。
+
+**(b) 为什么**
+- 苹果从 2024 年起要求 app 声明「需要理由的 API」（UserDefaults、文件时间戳、开机时间、磁盘空间、键盘列表）。我是 grep 代码逐个确认的：没有 `attributesOfItem`、`creationDate`、`systemUptime`、`volumeAvailableCapacity` 之类的调用。只声明真的用了的，因为多声明也会被问。
+- 「收集」的定义是数据离开设备、被开发者或第三方保存。v1 没有网络代码，所以是 Data Not Collected。手表通过 WatchConnectivity 传给用户自己的 iPhone 不算收集。
+- **如果以后上线 AI**：心率派生的摘要会发到后端和第三方大模型，要声明 Health（可能还有 Fitness）数据「被收集、不关联身份、不用于追踪、用途是 App 功能」，同时改隐私政策、在 app 里单独征得同意，并把 `OnboardingState.currentVersion` 加 1，让所有人重新看一遍说明。
+
+**(c) 语法**：`.xcprivacy` 就是一个 plist；XcodeGen 自动把它放进 Resources 构建阶段（已用 `project.pbxproj` 确认）。
+
+### 21. 离线队列落盘：`QueuePersistence.swift`
+
+**(a) 骨架**
+- `JSONFileStore<Value: Codable>`：一个值存成一个 JSON 文件。写用 `Data.write(options: .atomic)`；读到坏文件就改名成 `.corrupt` 放一边，返回 nil。
+- `JudgeQueueStore`：`Application Support/Flowbeat/judge-queue/<专注名>.json`，**一次专注一个文件**，队列空了就删文件。
+- `OfflineQueue.restoring(...)`：读回来时按**现在代码里的**上限重新整理：超过 1 小时的丢掉、超过 30 条丢最老的、保留顺序 / 入队时间 / 已试次数、清空退避。
+- `JudgeSync` 多了一个 `onChange` 回调：入队、送达、失败、过期之后都调一次，`FocusSession` 在里面落盘。
+- 启动时和每次结束专注后 `drainLeftovers()`：把以前专注剩下的队列补发，送达的判断用 `SessionRecord.appendingLateJudgments` 补进那次的存档 JSON。
+
+**(b) 为什么**
+- **为什么一次专注一个文件，而不是一个全局队列？** 晚到的判断要知道该补进哪个存档，文件名和存档同名就解决了。而且「当前专注」和「补发上次剩下的」不会抢着写同一个文件。
+- **为什么原子写？** 手表随时可能没电、被系统杀掉。原子写是先写临时文件再 rename，要么是旧文件、要么是新文件，不会出现半个 JSON。
+- **为什么按现在的上限重整，而不是信任文件里存的？** 文件可能是旧版本写的（比如以前容量 50），以后改上限也不能被旧文件带偏（`testLoadAppliesTheCurrentCapacityNotTheSavedOne`）。
+- **为什么坏文件改名而不是删掉？** 不让它每次启动都失败，同时留着证据方便排查。
+- **为什么放 Application Support 而不是 Documents？** 这是 app 内部状态，不是用户文件。
+- **为什么在 actor 里同步调用 `onChange`？** 这样写盘顺序和队列变化顺序一致，不会出现旧状态覆盖新状态。
+- 模拟器实测：后端停掉时跑了 80 秒，2 个窗口落盘；后端起来后重启 app，2 条按顺序送达，队列文件被删掉，存档多了 2 条判断。
+- 只有 AI build 用得到：Release 没有队列。但逻辑在 Core 里，有 11 个单测。
+
+**(c) 语法**
+- 泛型 struct `JSONFileStore<Value: Codable>`、`JSONEncoder.dateEncodingStrategy = .iso8601`。
+- `public private(set) var` 的 setter 只在**同一个文件**里可见，所以 `restoring` 必须写在 `OfflineQueue.swift` 里（放在另一个文件的 extension 里会编译报错，踩过）。
+- `Task.detached { [weak self] in ... }`：不继承当前 actor（主线程）的后台任务。
+- `@Sendable` 闭包里捕获的值（`store`、`name`）要是 Sendable 的。
+
+### 22. 首次启动说明 + 权限：`Onboarding.swift`、`OnboardingView.swift`、`Permissions.swift`
+
+**(a) 骨架**
+- 三页说明（竖向翻页）：做什么（心率 + 手腕动作 → 0–100 估计）→ 不是医疗设备、不做诊断 → 数据只在手表上。Debug 版第三页换成「开发版：AI 判断已开启」，如实告诉用户数据会发到后端。
+- 第四页先列出要申请的权限和原因，用户点「继续」才弹系统授权窗：先「健康」（心率 + 体能训练），再「运动与健身」。
+- `OnboardingState`：UserDefaults 里存「看过的版本号」，带版本，内容有实质变化时加 1，所有人重看。
+- `StartReadiness.evaluate(health:motion:)`：
+  - 健康被拒或设备不支持 → 「开始」按钮灰掉，显示去哪里打开，加一个「再检查一次」；
+  - 还没问过 → 可以开始（点开始时会弹授权窗）；
+  - 运动与健身被拒 → 只是警告：可以开始，但走动不会自动暂停。
+- 开始页左上角 ⓘ 可以再打开说明（About），最后一页显示版本号。app 回到前台时重新读一次权限（用户可能刚去设置里改过）。
+
+**(b) 为什么**
+- **为什么先解释再要权限？** 系统授权窗只弹一次，用户在没上下文时很容易点「不允许」，之后 app 再也弹不出来。这也是苹果 HIG 的建议，审核也会看。
+- **为什么不是死胡同？** 被拒后 HealthKit 不会再弹窗，所以必须告诉用户去哪里手动打开，并能「再检查一次」；回到前台自动刷新。
+- **为什么运动被拒只是警告？** 手腕加速度（`CMDeviceMotion`）不需要授权；被拒的只是活动识别和计步，影响的只是离座检测。
+- **为什么查的是「写体能训练」的权限？** HealthKit 出于隐私**不告诉 app 读权限有没有被拒**；能查的是 share 权限，而开 workout 必须有它。
+- 去掉医疗感的措辞：说明、描述、隐私政策都写「估计」「供参考」「不诊断、不治疗、不监测任何健康状况」。
+- **踩过的坑**：模拟器截图时，演示模式结束后冒出一个「运动与健身」授权窗。原因是 `stop()` 对**从没启动过**的 `CMMotionActivityManager` / `CMPedometer` 调了 `stop...Updates()`，这也会触发授权检查。修法：记一个 `activityTrackingStarted`，没启动就不 stop。这个系统弹窗卸载 app 后还会残留，要重启模拟器才消失，一开始我还以为是别的代码触发的。
+
+**(c) 语法**
+- `protocol IntegerStore: AnyObject` + `extension UserDefaults: IntegerStore {}`：让 UserDefaults 直接遵守协议，测试里换成字典实现。
+- `TabView(selection:)` + `.tag(n)` + `.tabViewStyle(.verticalPage)`。
+- `@Environment(\.scenePhase)` + `.onChange(of:) { _, phase in }`（watchOS 10 的两参数版本）。
+- `withCheckedContinuation`：把 CoreMotion 的回调式 API 包成 `async`。CoreMotion 没有单独的「请求授权」API，第一次查询活动记录时系统才弹窗。
+- 本地化：英文是开发语言，`Text("Start Focus")` 的字面量就是 key，中文在 `Localizable.xcstrings`；`Text(变量)` 不会被翻译，要用 `LocalizedStringKey` 参数或 `String(localized:)`；插值 `"\(n)× · \(s)"` 对应 key `"%lld× · %@"`。
+
+### 23. App Review 考虑和两种打包方式
+
+**(a) 骨架**
+- 两个手表 target 共用一个 XcodeGen 模板和全部源码，bundle id 相同：
+  - `Flowbeat` 带 `WKWatchOnly`，是 v1 推荐的独立手表 app；
+  - `FlowbeatWatchCompanion` 带 `WKCompanionAppBundleIdentifier`，嵌进 iPhone app。
+- `Config/Signing.xcconfig` 里只有一行 `DEVELOPMENT_TEAM =`，所有 target 都用它；版本 1.0.0 (1)；`ITSAppUsesNonExemptEncryption = NO`。
+- `docs/appstore/`：上架文案、审核备注、隐私政策、提交清单、截图。
+
+**(b) 为什么**
+- **为什么 v1 只发手表版？** iPhone 端只是一个「从手表同步过来的列表」，容易被 4.2（功能太少）拒；WatchConnectivity 从没跑通过；多一个 app 就多一套截图、隐私和审核面。
+- **为什么要两个 target，而不是一个？** 独立版要 `WKWatchOnly`，伴侣版要声明伴侣 bundle id，两者冲突；而且 watchOS 拒绝安装同时有 `WKWatchOnly` 和 `WKRunsIndependentlyOfCompanionApp` 的 app（模拟器实测报错）。
+- **审核最大的风险是 2.5.4**：后台模式只能用于它本来的用途，而「专注」不是典型的锻炼。我的回答：选 Mind & Body（冥想、呼吸类 app 也用它），只在用户点开始和结束之间运行，结束丢弃 workout，并在审核备注里把理由写在前面。被拒的备选方案是 `WKExtendedRuntimeSession`（mindfulness 类型，最多 1 小时），但那样心率会稀疏很多，分数只能更依赖手腕动作。这是产品上的取舍，不是改个配置就行。
+- **中国区**：上架中国大陆要 ICP App 备案号；不联网的 v1 不涉及生成式 AI 的备案问题。以后上线 AI 再处理。
+
+**(c) 语法**：XcodeGen 的 `targetTemplates` + `templates: [WatchApp]`；`configFiles` 把 xcconfig 挂到项目级配置上。注意：target 自己写了的 build setting 会覆盖 xcconfig，所以 target 里删掉了 `DEVELOPMENT_TEAM: ""`。
+
+---
+
+## 第六部分：面试题和回答
 
 （数字的出处见 README 的 Key metrics 表。）
 
@@ -420,8 +536,8 @@ Swift 和 Python 两边各定义一遍数据结构，字段名对不上时，Swi
 3. LLM 判断在模糊情况下不稳定，没有 ground truth。
 4. 模型对比只有 6 个合成窗口、每格 2–3 次。
 5. Claude provider 写了但没在线跑过（没有 key）。
-6. 离线队列只在内存里，app 被杀会丢判断。
-7. 后端没部署，没有 HTTPS 和限流。
+6. 后端没部署，没有 HTTPS 和限流（v1 上架版不联网，所以这条不挡上架）。
+7. 上架相关：App Review 可能不接受「专注」场景用 workout 后台模式（2.5.4，Q24）；手表截图尺寸和 watch-only app 的 bundle ID 在 App Store Connect 里怎么填，本地都验证不了。
 
 **Q20. 如果再给你两周，你先做什么？**
 第一周：
@@ -431,7 +547,7 @@ Swift 和 Python 两边各定义一遍数据结构，字段名对不上时，Swi
 
 第二周：
 - 用这些标签算规则分和 LLM 的准确率；
-- 调阈值，并把离线队列持久化到文件；
+- 调阈值（离线队列持久化已经做完了，见第 21 节）；
 - 后端加限流，部署到一个有 HTTPS 的地方。
 
 **Q21.（追问）你怎么知道你的单测在测对的东西，而不是在测实现？**
@@ -439,3 +555,48 @@ Swift 和 Python 两边各定义一遍数据结构，字段名对不上时，Swi
 - 契约测试把两个代码库绑在一起。
 - 端到端的行为（离线排队后按顺序送达）在模拟器里跑过，有后端日志和截图为证。
 - 但单测验证不了「分数有没有意义」，这只能靠真实数据（Q11）。
+
+**Q22. 你说上架版「不联网」，怎么证明？**
+三层：
+1. 编译条件 `FLOWBEAT_AI` 只在 Debug 有，`AIJudge.swift` 在 Release 里根本不编译；
+2. 网络客户端只能经过 `FeatureFlags.judgeTransport` 构造，开关关时工厂不被调用，有单测；
+3. `scripts/verify_release_offline.sh` 扫 Release 二进制：6 个后端标记必须一个都没有，同时 Debug 里 6 个必须都在，证明扫描本身有效。CI 每次 push 都跑。
+
+另外在模拟器里跑了 75 秒 Release 演示（模拟器里每 30 秒判断一次），本机后端一条请求都没收到。
+
+**Q23. 隐私清单里你声明了什么？为什么是 Data Not Collected？**
+- 不追踪；
+- 不收集数据；
+- required-reason API 只有 UserDefaults（CA92.1），是 grep 代码确认的。
+
+「收集」指数据离开设备被保存，v1 没有网络代码，所以不收集。如果以后上线 AI，健康派生数据会发到后端和第三方大模型，隐私标签、隐私清单、隐私政策、app 内的同意都要改（第 20 节）。
+
+**Q24. 用 workout session 做专注，审核会不会拒？**
+可能会，这是最大的审核风险（2.5.4：后台模式要用于它本来的用途）。我做了三件事：
+- 选 Mind & Body 类型；
+- 只在用户主动开始和结束之间运行，结束时 `discardWorkout()`；
+- 在审核备注里先解释为什么必须连续心率，再给出演示步骤。
+
+被拒的备选是 `WKExtendedRuntimeSession`（mindfulness），代价是心率稀疏。我会诚实地说：这是一个还没被审核验证的判断。
+
+**Q25. 离线队列落盘你怎么保证不写坏、不重复发？**
+- 原子写，只会是旧文件或新文件；
+- 坏文件改名放一边；
+- 读回来按现在的上限重整；
+- 一次专注一个文件；
+- `onChange` 在 actor 里同步调用，写盘顺序等于变化顺序；
+- 补发任务用 `drainTask` 防止启动时和结束时同时补发同一份。
+
+单测覆盖了往返、过期、截断、坏文件、路径穿越、重启后按顺序送达，模拟器里也端到端跑过一次（第 21 节）。
+
+**Q26. 首次启动为什么先讲再要权限？被拒怎么办？**
+系统授权窗只弹一次，没有上下文时用户容易拒绝，之后再也弹不出来。所以先用三页讲清楚做什么、不是医疗设备、数据只在手表上，最后一页列出权限和原因，点「继续」才弹窗。
+- 健康被拒：「开始」灰掉，告诉用户去哪里打开，可以「再检查一次」，回到前台自动刷新；
+- 运动被拒：只是警告，照样能用，只是没有离座检测。
+
+**Q27. 为什么 v1 不带 iPhone app？**
+- 4.2 风险：iPhone 端只是一个同步过来的列表；
+- WatchConnectivity 从没跑通；
+- 审核面翻倍。
+
+配置上两种都支持（两个手表 target，`WKWatchOnly` 和伴侣键不能共存），等真机上把同步跑通了，v1.1 再加。

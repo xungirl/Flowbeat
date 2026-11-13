@@ -8,6 +8,60 @@
 
 **Status (2026-11-12):** everything below has run only in the **watchOS simulator** (demo mode with simulated sensors), in local tests, and in GitHub Actions. It has **never run on a real Apple Watch**, and the focus score has not been validated against real labeled data.
 
+**v1 (App Store) is prepared but not submitted:** a watch-only app that runs fully on-device with no network. The AI judge below is compiled only into Debug builds. Signing, real-device testing and submission are waiting for the Apple Developer account. See [v1 release plan](#v1-release-plan).
+
+## v1 release plan
+
+**Product decision: watch-first, fully on-device, no network.** The shipped app is the rule-based score, away detection, labels and the summary. It has no backend, no LLM, no account and no tracking.
+
+| | Debug (`FLOWBEAT_AI`) | Release (App Store v1) |
+|---|---|---|
+| AI judge every 2 min + AI review | on, talks to `backend/` | **compiled out** |
+| `AIJudge.swift` (backend URL, token, HTTP client, few-shot label store) | compiled | not compiled (`#if FLOWBEAT_AI`) |
+| HRV read permission | requested | not requested (only the AI used it) |
+| Offline queue persisted to disk | yes | not present (no queue without AI) |
+| Onboarding page 3 | "Developer build: AI judge is on" | "Stays on your watch" |
+
+**Feature flag.** `project.yml` sets the Swift compilation condition `FLOWBEAT_AI` only in the watch targets' Debug configuration. There's a second, runtime gate: the network client can only be built through `FeatureFlags.judgeTransport(_:)` (FlowbeatCore), which never calls its factory when the flag is off. Unit tests check that gate. `scripts/verify_release_offline.sh` checks the result at the binary level: it builds Debug and Release, then requires that the Release binary contains **none** of 6 backend markers (`localhost:8765`, `/v1/judge`, `/v1/review`, `HTTPJudgeTransport`, `AIConfig`, `labeledExamples`) and that the Debug binary contains **all** of them, so the scan is known to work. It scans every Mach-O in the bundle, because Debug builds put the code in `Flowbeat.debug.dylib`. Local result: Debug 6/6, Release 0/6. CI runs it on every push.
+
+**Watch-only vs. iPhone companion.** Recommendation: **ship the watch app alone in v1** and add the iPhone app in v1.1 once WatchConnectivity has worked on a real pair. Reasons:
+- The iPhone app only lists sessions synced from the watch, which is a guideline 4.2 (minimum functionality) risk.
+- WatchConnectivity has never run anywhere.
+- A second app doubles the review surface (screenshots, privacy, metadata).
+
+Both setups are configured. The schemes and targets share the same watch sources:
+- Scheme `Flowbeat` → target `Flowbeat`: `WKWatchOnly`, the v1 build.
+- Scheme `FlowbeatPhone` → `FlowbeatPhone` + embedded `FlowbeatWatchCompanion`: `WKCompanionAppBundleIdentifier` + `WKRunsIndependentlyOfCompanionApp`.
+
+watchOS refuses to install an app that declares both `WKWatchOnly` and `WKRunsIndependentlyOfCompanionApp`; the simulator rejected it during this work.
+
+**Build Release** (no signing needed for the simulator):
+
+```bash
+xcodegen generate
+xcodebuild build -project Flowbeat.xcodeproj -scheme Flowbeat -configuration Release \
+  -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)' CODE_SIGNING_ALLOWED=NO
+scripts/verify_release_offline.sh          # Release has no backend code, Debug does
+scripts/appstore_screenshots.sh            # EN + 中文 screenshots of the Release build (demo mode)
+```
+
+**Signing.** The only thing to edit is `Config/Signing.xcconfig`: `DEVELOPMENT_TEAM = <your Team ID>`. It applies to every target and configuration, and no target overrides it. Version 1.0.0 (build 1) comes from `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml`. `ITSAppUsesNonExemptEncryption = NO`.
+
+**Release-readiness work in the app:**
+- English is the development language, with Simplified Chinese translations: String Catalogs for the watch and iPhone apps, `.strings` in the `FlowbeatPhoneUI` package, `InfoPlist.strings` for the app name and permission texts.
+- A first-launch disclaimer (what it estimates / not a medical device / data stays on the watch). It asks for permissions only after the explanation, handles denial without dead ends, and can be reopened from an About button.
+- `PrivacyInfo.xcprivacy` declares no tracking, no collected data and `UserDefaults` (CA92.1) as the only required-reason API.
+- `WKBackgroundModes: workout-processing` and the HealthKit entitlement are kept for the `HKWorkoutSession`.
+
+**App Store package** in [`docs/appstore/`](docs/appstore/):
+- [`listing.md`](docs/appstore/listing.md): name, subtitle, description and keywords in EN + 中文, category, age rating, App Privacy = Data Not Collected.
+- [`review-notes.md`](docs/appstore/review-notes.md): why a Mind & Body workout session is used, a demo script, no login.
+- [`privacy-policy.md`](docs/appstore/privacy-policy.md): EN + 中文, ready for the blog.
+- [`submission-checklist.md`](docs/appstore/submission-checklist.md): Team ID → App IDs → real-device test plan → screenshots → TestFlight → submit, plus China storefront notes.
+- [`screenshots/`](docs/appstore/screenshots/).
+
+**Still unverified:** everything that needs a real watch (HR sampling rate, background survival, battery per hour, the exact Settings paths in the denial guidance, that the discarded workout leaves nothing in Fitness). The same goes for which watch screenshot size App Store Connect currently requires, and for how App Store Connect handles the bundle ID of a watch-only app record (archiving needs signing).
+
 ## Architecture
 
 ```
@@ -42,11 +96,21 @@
 | `…/Models.swift` | Wire models shared with the backend, plus `WindowSummary.make` (statistics-only summary). |
 | `…/OfflineQueue.swift` | `OfflineQueue` + `JudgeSync` actor: FIFO, capacity 30, 1 h max age, queue-level exponential backoff, permanent-4xx drop. |
 | `…/HRV.swift` | Latest plausible SDNN reading within 6 h, sent with its age. |
+| `…/QueuePersistence.swift` | `JudgeQueueStore`: one JSON file per session in Application Support, atomic writes, caps re-applied on load, corrupt files moved aside; late judgments appended to the session archive. |
+| `…/FeatureFlags.swift` | `FeatureFlags` + `JudgeTransport`: the network client can only be built through the flag. |
+| `…/Onboarding.swift` | `OnboardingState` (versioned, UserDefaults) and `StartReadiness` (permission states → can start + notices). |
 | `…/SessionTimeline.swift`, `…/SessionArchive.swift` | Chart data for the iPhone (bucketing, gaps, labels, away spans, judgments) and the iPhone's session store. |
 | `FlowbeatCore/Sources/FlowbeatPhoneUI/` | iPhone SwiftUI + Swift Charts views (in the package so they compile on macOS too). |
 | `Flowbeat/FocusSession.swift` | Watch: `HKWorkoutSession` (mind & body, discarded at the end) for background HR every few seconds, CoreMotion, timers, HRV query, networking via `JudgeSync`. |
-| `Flowbeat/AIJudge.swift`, `Flowbeat/PhoneSync.swift` | Backend client and label store; WatchConnectivity `transferFile` to the iPhone. |
+| `Flowbeat/AIJudge.swift` | **Debug only** (`#if FLOWBEAT_AI`): backend config, `HTTPJudgeTransport`, few-shot label store. |
+| `Flowbeat/AppFeatures.swift` | The build's flags; the only place the network client is constructed. |
+| `Flowbeat/PhoneSync.swift` | WatchConnectivity `transferFile` to the iPhone. |
 | `Flowbeat/ContentView.swift` | Start / in-session (vertical pages) / summary screens. |
+| `Flowbeat/OnboardingView.swift`, `Flowbeat/Permissions.swift` | First-launch disclaimer + About, permission requests and denial notices. |
+| `Flowbeat/Localizable.xcstrings`, `*.lproj/InfoPlist.strings`, `PrivacyInfo.xcprivacy` | EN/中文 strings, permission texts, privacy manifest. |
+| `Config/Signing.xcconfig` | `DEVELOPMENT_TEAM`, the single signing setting. |
+| `scripts/` | `verify_release_offline.sh` (binary scan), `appstore_screenshots.sh`. |
+| `docs/appstore/` | Listing, review notes, privacy policy, submission checklist, screenshots. |
 | `FlowbeatPhone/` | iOS companion app: session list, detail chart, `WCSessionDelegate` receiver, bundled sample session. |
 | `backend/app/` | FastAPI: `schemas.py` (validation), `prompts.py`, `providers.py` (Qwen / Claude / Fake), `resilience.py` (timeout, retry, fallback), `config.py`, `logs.py`, `main.py`. |
 | `backend/scripts/compare_models.py` | Model + anchoring comparison. Raw results are in `backend/scripts/results/`. |
@@ -56,6 +120,8 @@ During a session you can tap **专注 (focused)** or **走神 (distracted)** to 
 Blood oxygen is intentionally not used: third-party apps can't trigger SpO₂ readings, and it doesn't change with focus.
 
 ## AI judge (backend + LLM)
+
+> **Debug builds only.** The App Store v1 build compiles all of this out (see [v1 release plan](#v1-release-plan)). It stays in the repo as a working developer feature.
 
 Every 2 minutes the watch sends a compact **window summary** to a small FastAPI backend: HR mean/min/max/trend vs. baseline, wrist stillness, away seconds, and optional HRV with its age. The backend asks an LLM for `{state, score, reason}`. The LLM is **Qwen `qwen3.8-flash`** by default, chosen by `LLM_PROVIDER=qwen|claude|fake`; the Claude provider is implemented but has never been run live. Your own **focused/distracted labels** are sent as few-shot examples, so the model judges against *your* body rather than generic thresholds. At the end of a session `/v1/review` returns a short summary and one tip.
 
@@ -88,10 +154,11 @@ Optional env: `QWEN_MODEL` (default `qwen3.8-flash`), `CLAUDE_MODEL`, `LOG_FORMA
 
 | Suite | Command | Result (2026-11-12) |
 |---|---|---|
-| Swift logic (macOS) | `cd FlowbeatCore && swift test` | **75 passed** |
-| Same suite on the watchOS 11.4 simulator | `xcodegen generate && xcodebuild test -project Flowbeat.xcodeproj -scheme Flowbeat -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)'` | **75 passed** |
+| Swift logic (macOS) | `cd FlowbeatCore && swift test` | **102 passed** (2026-11-13) |
+| Same suite on the watchOS 11.4 simulator | `xcodegen generate && xcodebuild test -project Flowbeat.xcodeproj -scheme Flowbeat -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)'` | **102 passed** (2026-11-13) |
 | Backend (fake / scripted providers, no LLM calls) | `cd backend && uv run pytest` | **48 passed** |
-| CI (`.github/workflows/ci.yml`) | on every push to `main` | backend pytest · Docker build + container smoke test · `swift test` on macOS · watchOS-simulator tests + iPhone app build + iOS-simulator screenshots |
+| Release has no network code | `scripts/verify_release_offline.sh` | Debug 6/6 markers, Release 0/6 → OK |
+| CI (`.github/workflows/ci.yml`) | on every push to `main` | backend pytest · Docker build + container smoke test · `swift test` on macOS · watchOS-simulator tests · Release offline check · iPhone app Debug + Release builds · iOS-simulator screenshots |
 
 What the Swift tests cover:
 - **Calibration, penalties and smoothing:** median calibration, motion/HR penalty boundaries, smoothing.
@@ -99,6 +166,9 @@ What the Swift tests cover:
 - **Window summaries:** the window-summary builder, HRV selection, and JSON round trips.
 - **Offline queue:** cap, expiry, backoff growth, in-order delivery, the permanent-error drop, and no double send under concurrent submits.
 - **iPhone data:** timeline bucketing and gaps, and archive import.
+- **Feature flag:** with the AI flag off, the network client's factory is never called (no client, no requests).
+- **Persistence:** queue round trip, 1 h expiry and 30-item cap re-applied on load, corrupt files, path traversal, in-order delivery after a relaunch, late judgments added to the archive.
+- **Onboarding and permissions:** onboarding completion survives a relaunch and reappears for a new version; Health denied blocks Start with guidance; Motion denied only warns.
 - **Contract:** the Swift JSON keys must match the backend's Pydantic fields. Both sides read `FlowbeatCore/Tests/FlowbeatCoreTests/Fixtures/contract_fields.json`; regenerate it with `uv run python scripts/export_contract.py`.
 
 ## Model comparison
@@ -195,10 +265,15 @@ xcodegen generate        # generates Flowbeat.xcodeproj from project.yml (not co
 open Flowbeat.xcodeproj
 ```
 
-Targets: `Flowbeat` (watchOS 10+, bundle `com.xungirl.flowbeat.watchkitapp`, runs independently) and `FlowbeatPhone` (iOS 17+, bundle `com.xungirl.flowbeat`, embeds the watch app). Both depend on the local `FlowbeatCore` package.
+Targets (all depend on the local `FlowbeatCore` package):
+- `Flowbeat`: watchOS 10+, bundle `com.xungirl.flowbeat.watchkitapp`, watch-only (v1).
+- `FlowbeatWatchCompanion`: the same sources and bundle ID, as a companion.
+- `FlowbeatPhone`: iOS 17+, bundle `com.xungirl.flowbeat`, embeds `FlowbeatWatchCompanion`.
+
+Debug = AI judge on; Release = AI off.
 
 **Real devices (not done yet):**
-1. For both targets, open **Signing & Capabilities** and pick your Team. A free Apple ID works for personal devices.
+1. Put your Team ID in `Config/Signing.xcconfig` and run `xcodegen generate`. A free Apple ID's personal team works for your own devices.
 2. Turn on **Developer Mode** on both the iPhone and the Apple Watch.
 3. Run `FlowbeatPhone` on the iPhone (this installs the watch app too), or run `Flowbeat` directly on the watch.
 
@@ -206,6 +281,7 @@ Targets: `Flowbeat` (watchOS 10+, bundle `com.xungirl.flowbeat.watchkitapp`, run
 - `-demo` auto-starts a session with simulated sensors. It skips the HealthKit and Motion permission prompts, because the sensors are fake anyway.
 - `-demoLabels` taps 专注/走神 automatically once per cycle.
 - `-demoStopAfter <seconds>` ends the session and saves the JSON.
+- `-onboardingPage <n>` opens the first-launch screens at page n; `-demoDenied` pretends Health and Motion were denied (for screenshots of the guidance).
 
 ```bash
 xcrun simctl launch <watch-udid> com.xungirl.flowbeat.watchkitapp -demo -demoLabels -demoStopAfter 245
@@ -220,7 +296,7 @@ The simulator has no real sensors, so scores there are meaningless. Only a real 
 
 ## Project Journey
 
-Stages 1–6 happened on 2026-11-11 and stages 7–12 on 2026-11-12 (see `git log`). Each stage links to the section above that holds the details, so they aren't repeated here.
+Stages 1–6 happened on 2026-11-11, stages 7–12 on 2026-11-12 and stages 13–17 (App Store v1 preparation) on 2026-11-12/13 (see `git log`). Each stage links to the section above that holds the details, so they aren't repeated here.
 
 ### 1. v0: rule-based focus score on the watch (`13a8f6a`)
 - **Goal:** a live 0–100 focus estimate from signals a watch can read continuously.
@@ -313,7 +389,7 @@ Stages 1–6 happened on 2026-11-11 and stages 7–12 on 2026-11-12 (see `git lo
   - The backend was killed for 62 s. Local scoring continued, and 2 windows were queued.
   - Both arrived in order 6 s after the restart, once the backoff expired. The backend log shows the timestamps.
   - Screenshots: `docs/screenshots/watch-offline-queued.png`, `docs/screenshots/watch-back-online.png`.
-- **Limit:** the queue lives in memory, so if the app is killed, unsent judgments are lost. The windows themselves are still saved in the session JSON.
+- **Limit (fixed in stage 15):** the queue lived in memory, so if the app was killed, unsent judgments were lost. The windows themselves were still saved in the session JSON.
 
 ### 11. iPhone companion (`f68c90b`)
 - **Goal:** the roadmap's "sync sessions and chart your focus timeline".
@@ -350,31 +426,86 @@ Stages 1–6 happened on 2026-11-11 and stages 7–12 on 2026-11-12 (see `git lo
   - In the simulator, HRV is absent and the summary simply omits it (sample session).
 - **Not verified:** whether a real watch returns SDNN readings during a session, or how often.
 
+### 13. Release configuration: the AI judge becomes a build-time flag (`2d016b7`)
+- **Goal:** a v1 that can honestly say "no network, data stays on the watch" while keeping the AI judge working for development.
+- **Decision:**
+  - A **compilation condition** (`FLOWBEAT_AI`, Debug only) rather than a runtime toggle, so the Release binary physically contains no backend URL, token or HTTP client.
+  - A second, runtime gate (`FeatureFlags.judgeTransport`) so the client can't be constructed with the flag off even if its code is ever compiled in.
+  - English became the development language, with 中文 as a translation (String Catalogs).
+- **Built:**
+  - `Config/Signing.xcconfig` (one `DEVELOPMENT_TEAM` line), version 1.0.0 (1) from build settings, `ITSAppUsesNonExemptEncryption = NO`.
+  - Two watch targets from one XcodeGen template (watch-only `Flowbeat`, `FlowbeatWatchCompanion` for the iPhone app).
+  - EN/中文 strings for the watch app, the iPhone app and the `FlowbeatPhoneUI` package.
+  - HRV permission requested only in AI builds; the ATS local-networking exception removed.
+- **Verified:**
+  - The Release binary contains none of the backend strings; the Debug binary does.
+  - Debug still reached `localhost:8765` without the ATS exception: a `/v1/judge` 200 appears in the backend log.
+  - A 75 s Release demo produced **0** backend requests.
+  - In the watch simulator the UI switched to 中文 with the system language.
+- **Problem found:** the simulator refused to install the watch-only build: *"defines both WKWatchOnly and WKRunsIndependentlyOfCompanionApp… not allowed"*. **Fix:** the independent-app key moved to the companion target only.
+
+### 14. Privacy manifest (`63425fe`)
+- **Decision:** declare only what the code actually uses, found by grepping for the required-reason API families. The only one is `UserDefaults` (CA92.1). No tracking, no collected data. The manifest's header comment lists what would have to change if AI ever shipped.
+
+### 15. Offline queue persisted to disk (`64b8e81`)
+- **Goal:** close stage 10's known limit: unsent judgments were lost when the app was killed.
+- **Decision:**
+  - **One file per session** (`Application Support/Flowbeat/judge-queue/<session>.json`, same name as the archive), so late judgments know which archive to join and the current session never shares a file with leftovers.
+  - Atomic writes after every change via a `JudgeSync.onChange` hook.
+  - On load, the **current** caps are re-applied (30 items, 1 h); corrupt files are moved aside, not deleted.
+- **Verified:**
+  - 11 unit tests: round trip, expiry, capacity from an "old version" file, corrupt file, path traversal, no temp files left, delivery in order after a simulated relaunch.
+  - Simulator: the backend was down during an 80 s demo and 2 windows were written to disk. After a relaunch with the backend up, both were delivered in order, the queue file was deleted, and the session archive gained 2 judgments.
+- **Problem found:** a `public private(set)` setter is visible only in its own file, so the restore logic had to move into `OfflineQueue.swift`.
+
+### 16. First-launch disclaimer and permissions (`250947c`)
+- **Goal:** explain before asking. Be clear that this is not a medical device. Never dead-end on a denied permission.
+- **Built:**
+  - Three explanation pages, then a permissions page whose **Continue** triggers the Health and Motion prompts. The pages can be reopened from an About (i) button.
+  - `OnboardingState` (versioned) and `StartReadiness` in Core. Health denied → Start disabled + where to turn it on + "Check again". Motion denied → a warning only. Permissions are re-read when the app becomes active.
+  - Simulator-only `-onboardingPage` / `-demoDenied` for screenshots.
+- **Verified:** 11 unit tests; screenshots of every page in both languages and of the denied state.
+- **Problem found:** the screenshots showed a Motion & Fitness prompt after a demo session ended. `stop()` called `stopActivityUpdates()` / `pedometer.stopUpdates()` on managers that were never started (demo mode skips them), and that alone triggers the authorization prompt. The alert also survived an app uninstall, so at first it looked like a launch-time prompt; only a simulator reboot cleared it. **Fix:** stop them only if they were started (`cc7ec24`).
+
+### 17. App Store package, offline check and CI (`43fe5ef`, `2bd6cd9`)
+- **Built:**
+  - `docs/appstore/`: listing EN + 中文 with lengths checked by script, review notes, privacy policy EN + 中文, an ordered submission checklist with a 13-item real-device test plan and China storefront notes.
+  - Screenshots from `scripts/appstore_screenshots.sh`.
+  - `scripts/verify_release_offline.sh`, now run in CI, plus a Release build of the iPhone app. The `apps` job uses `shell: bash` (pipefail): before, `xcodebuild … | tail` could hide a failed build or test.
+- **Problem found:** the first version of the offline check reported 0 markers in Debug as well. macOS `strings` reading Mach-O from stdin doesn't scan the data sections, and Debug code lives in `Flowbeat.debug.dylib`. Without the "Debug must contain every marker" rule, Release's "0 found" would have passed for the wrong reason. **Fix:** scan each Mach-O file directly, and use only markers that really exist in a simulator Debug build.
+- **Not verifiable locally:** whether App Store Connect still accepts 410 × 502 / 416 × 496 watch screenshots (the newest simulator here is watchOS 11.4: no Ultra 3 / Series 11); how ASC wants the bundle ID for a watch-only app record (archiving needs signing). `simctl status_bar override` had no effect on the watch simulator, so the screenshots show the real clock.
+
 ### Key metrics
 
 | Metric | Value | How measured | Source |
 |---|---|---|---|
 | Scoring cadence | 1 score/s on-device, 25 Hz motion | timer + `deviceMotionUpdateInterval` | `Flowbeat/FocusSession.swift` |
 | Calibration | 60 s, median resting HR | `FocusEngine(calibrationSeconds: 60)`, `finishCalibration` | `FlowbeatCore/Sources/FlowbeatCore/FocusScorer.swift` |
-| LLM judge interval | every 120 s (30 s in simulator) | `AIConfig.judgeInterval` | `Flowbeat/AIJudge.swift` |
+| LLM judge interval (Debug builds) | every 120 s (30 s in simulator) | `AppFeatures.judgeInterval` | `Flowbeat/AppFeatures.swift` |
 | Anchoring: LLM score == rule score | 10/30 with the rule score sent → **0/30** without | `compare_models.py`, Run 3, 90 real calls | `backend/scripts/results/compare-2026-11-12-*.json` |
 | Verdict changed when the rule score was swapped | 4/18 (flash), 6/12 (max) | same window, `rule` vs `misleading` condition | Run 3 |
 | Chosen model latency | median 1.10 s (0.78–2.06) for `qwen3.8-flash`, 1.51 s for `qwen3.8-max` | wall clock per call | Run 3 |
 | Tokens per judgment | median 749 in / 35 out (2 few-shot examples) | API usage | Run 3 |
 | Real LLM calls, 2026-11-12 | 122 total: 90 comparison + 6 re-check + 2 HRV check + 6 smoke/debug + 18 sample-session demo | counted per run | this README |
-| Swift unit tests | 75 passing, on macOS and the watchOS 11.4 simulator | `swift test`, `xcodebuild test` | `FlowbeatCore/Tests/` |
+| Swift unit tests | 102 passing, on macOS and the watchOS 11.4 simulator (75 before the v1 work) | `swift test`, `xcodebuild test` | `FlowbeatCore/Tests/` |
 | Backend tests | 48 passing (no LLM calls) | `uv run pytest` | `backend/tests/` |
 | Offline queue | backoff 15 → 30 → … ≤ 300 s, cap 30, max age 1 h, ≤ 8 attempts | unit tests | `FlowbeatCore/Sources/FlowbeatCore/OfflineQueue.swift` |
 | Outage recovery (simulator) | 62 s outage, 2 windows queued, delivered in order 6 s after restart | backend access log timestamps | stage 10 |
 | LLM failure handling | 8 s timeout, 1 retry, rule-score fallback; unreachable upstream → fallback in 535 ms | live run with DashScope pointed at a dead port | stage 9 |
 | Review endpoint | 0/2 → 2/2 valid live reviews after the prompt-format fix | live calls | stage 9 |
+| Release build network code | 0/6 backend markers in Release, 6/6 in Debug | `strings` over every Mach-O in the app bundle | `scripts/verify_release_offline.sh` |
+| Release demo network requests | 0 requests in 75 s (Debug: `/v1/judge` 200 within the first window) | local backend access log | stage 13 |
+| Queue survives relaunch (simulator) | 2 windows on disk → 2 delivered in order after relaunch, file removed, +2 judgments in the archive | app container files + backend log | stage 15 |
+| Localization | 54 watch strings + 19 iPhone-view strings + 8 iPhone-app strings, EN source + 中文 | String Catalog / `.strings` | `Flowbeat/Localizable.xcstrings` |
+| App Store screenshots | 20 (5 screens × EN/中文 × Ultra 2 410×502, Series 10 416×496), Release build, demo mode | `scripts/appstore_screenshots.sh` | `docs/appstore/screenshots/` |
+| Version | 1.0.0 (1) | `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION` | `project.yml` |
 
-Caveat: the comparison is a smoke test (6 synthetic windows, 2–3 runs per cell), not a statistical evaluation. All app results come from the simulator with simulated sensors. **Nothing has run on a real Apple Watch**, and the focus score has not been validated against real labels.
+Caveat: the comparison is a smoke test (6 synthetic windows, 2–3 runs per cell), not a statistical evaluation. All app results come from the simulator with simulated sensors. **Nothing has run on a real Apple Watch**, and the focus score has not been validated against real labels. The v1 build has not been signed, archived or submitted, and battery drain, background survival and the real permission flows are still unmeasured.
 
 ### Next steps
-- **Run on a real Apple Watch** (free Apple ID signing): measure the HR sample rate, battery drain per hour, background survival and the permission flows, and test WatchConnectivity on a real pair.
+- **When the developer account is approved:** paste the Team ID into `Config/Signing.xcconfig`, run the real-device test plan in [`docs/appstore/submission-checklist.md`](docs/appstore/submission-checklist.md) (HR sample rate, battery drain per hour, background survival, permission flows, a 30-min session), then TestFlight → submit.
 - Collect ≥ 10 labeled sessions, then measure the rule score and the LLM judge against the labels (accuracy / F1). Tune thresholds or train a personal model.
-- Persist the offline queue to disk. Add rate limiting and HTTPS before any deployment.
+- v1.1: test WatchConnectivity on a real pair, then ship the iPhone companion. Add rate limiting and HTTPS before any backend deployment.
 
 ## Roadmap
 
@@ -388,7 +519,9 @@ Caveat: the comparison is a smoke test (6 synthetic windows, 2–3 runs per cell
 - [x] Offline-tolerant sync on the watch (queue + backoff + cap)
 - [x] iPhone companion: sync sessions (WatchConnectivity) and chart your focus timeline. Builds and is screenshotted in CI; WatchConnectivity not yet tested on a real or simulated pair
 - [x] Use system HRV (SDNN) as an optional extra signal (not yet seen on a real watch)
+- [x] App Store v1 preparation: AI as a build-time flag (Release has no network code, checked in CI), signing xcconfig, EN/中文, privacy manifest, persisted offline queue, first-launch disclaimer + permission handling, listing / review notes / privacy policy / checklist / screenshots
 - [ ] **Run on a real Apple Watch** and collect labeled sessions
+- [ ] Submit v1 (watch-only) to the App Store: waiting for the developer account
 - [ ] Validate the score against labels; tune thresholds / train a personal model (Create ML)
 - [ ] Deploy the backend with HTTPS and rate limiting
 - [ ] Integrate with [Nod](https://github.com/xungirl/Nod): hold notifications while you're in flow
