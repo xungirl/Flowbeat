@@ -54,8 +54,12 @@ jobs:
       - run: swift test --package-path FlowbeatCore
 
   apps:
-    name: Watch tests + iPhone app build and simulator screenshots
+    name: Watch tests + Release offline check + iPhone builds and screenshots
     runs-on: macos-15
+    defaults:
+      run:
+        # pipefail: `xcodebuild ... | tail` must fail the step when xcodebuild fails
+        shell: bash
     steps:
       - uses: actions/checkout@v4
       - run: brew install xcodegen
@@ -80,11 +84,19 @@ jobs:
         run: |
           xcodebuild test -project Flowbeat.xcodeproj -scheme Flowbeat -destination "id=$WATCH" \
             -derivedDataPath dd CODE_SIGNING_ALLOWED=NO | tail -n 5
+      - name: Release (AI off) watch build contains no backend/network code
+        # builds Debug + Release of the watch-only scheme, scans both binaries (see the script header)
+        run: DEST="id=$WATCH" scripts/verify_release_offline.sh dd-verify
       - name: Build iPhone app (embeds the watch app)
         run: |
           xcodebuild build -project Flowbeat.xcodeproj -scheme FlowbeatPhone -destination "id=$IPHONE" \
             -derivedDataPath dd CODE_SIGNING_ALLOWED=NO | tail -n 3
           ls dd/Build/Products/Debug-iphonesimulator/FlowbeatPhone.app/Watch/
+      - name: Build iPhone app, Release configuration
+        run: |
+          xcodebuild build -project Flowbeat.xcodeproj -scheme FlowbeatPhone -configuration Release \
+            -destination "id=$IPHONE" -derivedDataPath dd CODE_SIGNING_ALLOWED=NO | tail -n 3
+          ls dd/Build/Products/Release-iphonesimulator/FlowbeatPhone.app/Watch/
       - name: Screenshot the iPhone app in the simulator
         run: |
           mkdir -p shots

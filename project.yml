@@ -55,7 +55,7 @@ targetTemplates:
         # 功能开关：只有 Debug 编译 AI 判断（AIJudge.swift 整个文件 + FocusSession 里的 AI 部分）。
         # Release 没有这个条件，后端地址、口令、URLSession 调用都不会进二进制（scripts/verify_release_offline.sh 会检查）。
         Debug:
-          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG FLOWBEAT_AI"
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) FLOWBEAT_AI"   # $(inherited) 已经带 DEBUG
         Release:
           SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
     info:

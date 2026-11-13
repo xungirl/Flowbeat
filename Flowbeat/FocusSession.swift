@@ -482,7 +482,7 @@ final class FocusSession: NSObject, ObservableObject {
                 let r = await sync.flush(ignoringBackoff: true)
                 if !r.delivered.isEmpty { Self.appendToArchive(name, r.delivered) }
             }
-            await MainActor.run { self?.drainTask = nil }
+            if let me = self { await MainActor.run { me.drainTask = nil } }
         }
     }
 
