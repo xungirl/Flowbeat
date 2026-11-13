@@ -43,6 +43,9 @@ final class FocusSession: NSObject, ObservableObject {
     private var sessionName: String?
     private var tickTimer: Timer?
     private var pendingLabel: String?
+    /// 活动识别 / 计步有没有真的启动过。没启动就别调 stop：在模拟器里实测，对没启动的
+    /// CMMotionActivityManager / CMPedometer 调 stop 也会弹「运动与健身」授权窗（演示模式结束时冒出来）
+    private var activityTrackingStarted = false
 
     // AI 判断（后端 + 大模型）。只在 FLOWBEAT_AI（Debug）build 里会有值；
     // Release 里 transport 是 nil，这些永远保持初始值，不发任何请求，本地规则照常工作。
@@ -194,8 +197,11 @@ final class FocusSession: NSObject, ObservableObject {
             tickTimer?.invalidate()
             tickTimer = nil
             motionManager.stopDeviceMotionUpdates()
-            activityManager.stopActivityUpdates()
-            pedometer.stopUpdates()
+            if activityTrackingStarted {
+                activityManager.stopActivityUpdates()
+                pedometer.stopUpdates()
+                activityTrackingStarted = false
+            }
         }
         workoutSession?.end()
         if let builder {
@@ -335,6 +341,7 @@ final class FocusSession: NSObject, ObservableObject {
 
     /// 系统的活动识别（静止 / 走路 / 跑步）+ 计步。判断有几秒延迟，属正常。
     private func startActivityTracking(from start: Date) {
+        activityTrackingStarted = true
         if CMMotionActivityManager.isActivityAvailable() {
             activityManager.startActivityUpdates(to: .main) { [weak self] activity in
                 guard let self, let activity, activity.confidence != .low else { return }
