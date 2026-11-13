@@ -13,6 +13,9 @@ import FlowbeatCore
 final class FocusSession: NSObject, ObservableObject {
     enum Phase { case idle, calibrating, running, finished }
 
+    /// app 和 App Intents（FocusIntents.swift）共用的唯一实例
+    static let shared = FocusSession()
+
     @Published var phase: Phase = .idle
     @Published var heartRate: Double?
     @Published var motion: Double = 0

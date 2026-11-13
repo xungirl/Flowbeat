@@ -1,0 +1,56 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "End my ${applicationName} session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结束${applicationName}专注"
+          }
+        }
+      }
+    },
+    "Start a Pomodoro in ${applicationName}": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在${applicationName}开始番茄钟"
+          }
+        }
+      }
+    },
+    "Start a focus session in ${applicationName}": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用${applicationName}开始一次专注"
+          }
+        }
+      }
+    },
+    "Start focus in ${applicationName}": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在${applicationName}开始专注"
+          }
+        }
+      }
+    },
+    "Stop focus in ${applicationName}": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在${applicationName}结束专注"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

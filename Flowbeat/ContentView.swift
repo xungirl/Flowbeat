@@ -495,6 +495,7 @@ struct ControlsPage: View {
 
             HStack(spacing: 6) {
                 labelButton("Focused", icon: "brain.head.profile", color: .mint, tag: "focused")
+                    .primaryHandGesture()   // watchOS 11 双指互点：不用碰屏幕就能标「专注」
                 labelButton("Distracted", icon: "cloud.fog.fill", color: .orange, tag: "distracted")
             }
 
@@ -638,6 +639,17 @@ struct SummaryView: View {
         .font(.system(.footnote, design: .rounded))
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
+    }
+}
+
+extension View {
+    /// watchOS 11+ 的双指互点（double tap）触发这个按钮；watchOS 10 上什么也不做
+    @ViewBuilder func primaryHandGesture() -> some View {
+        if #available(watchOS 11.0, *) {
+            handGestureShortcut(.primaryAction)
+        } else {
+            self
+        }
     }
 }
 

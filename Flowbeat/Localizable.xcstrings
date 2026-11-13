@@ -87,6 +87,16 @@
         }
       }
     },
+    "A focus session is already running.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已经有一次专注在进行。"
+          }
+        }
+      }
+    },
     "A focus session runs a Mind & Body workout to read your heart rate. It is discarded and never saved to Health.": {
       "localizations": {
         "zh-Hans": {
@@ -437,6 +447,16 @@
         }
       }
     },
+    "Ends the running focus session and saves it.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结束正在进行的专注并保存。"
+          }
+        }
+      }
+    },
     "Estimates how focused you are from your heart rate and wrist motion, as a 0–100 score.": {
       "localizations": {
         "zh-Hans": {
@@ -457,6 +477,16 @@
         }
       }
     },
+    "Flowbeat couldn't start. Open the app to see why.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "心流没能开始，打开 app 查看原因。"
+          }
+        }
+      }
+    },
     "Focus %lld/%lld min": {
       "localizations": {
         "zh-Hans": {
@@ -473,6 +503,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "专注指数"
+          }
+        }
+      }
+    },
+    "Focus session started. Sit still for the calibration.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注已开始，请先静坐校准。"
           }
         }
       }
@@ -737,6 +777,16 @@
         }
       }
     },
+    "No focus session is running.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "现在没有进行中的专注。"
+          }
+        }
+      }
+    },
     "Not a medical device": {
       "localizations": {
         "zh-Hans": {
@@ -797,6 +847,16 @@
         }
       }
     },
+    "Pomodoro started. Sit still for the calibration.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "番茄钟已开始，请先静坐校准。"
+          }
+        }
+      }
+    },
     "Resumes when you sit": {
       "localizations": {
         "zh-Hans": {
@@ -823,6 +883,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "本次目标"
+          }
+        }
+      }
+    },
+    "Session saved. %lld min focused.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存，本次专注 %lld 分钟。"
           }
         }
       }
@@ -857,6 +927,46 @@
         }
       }
     },
+    "Start Focus Session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始专注"
+          }
+        }
+      }
+    },
+    "Start Pomodoro": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始番茄钟"
+          }
+        }
+      }
+    },
+    "Starts a Pomodoro focus session with your work and break lengths.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按你设置的工作 / 休息时长开始番茄钟。"
+          }
+        }
+      }
+    },
+    "Starts a free-run focus session in Flowbeat.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在心流里开始一次自由计时的专注。"
+          }
+        }
+      }
+    },
     "Stays on your watch": {
       "localizations": {
         "zh-Hans": {
@@ -883,6 +993,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "稳"
+          }
+        }
+      }
+    },
+    "Stop Focus": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结束专注"
+          }
+        }
+      }
+    },
+    "Stop Focus Session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结束专注"
           }
         }
       }
