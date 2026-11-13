@@ -55,7 +55,7 @@ struct ContentView: View {
         #if targetEnvironment(simulator)
         // 演示模式（-demo）直接进开始页，方便自动化截图
         let args = ProcessInfo.processInfo.arguments
-        if args.contains("-demo") || args.contains("-demoDenied") { return false }
+        if args.contains("-demo") || args.contains("-demoDenied") || args.contains("-demoHistory") { return false }
         #endif
         return OnboardingState(store: UserDefaults.standard).needsOnboarding
     }
@@ -96,6 +96,17 @@ struct StartView: View {
     @AppStorage(AppSettings.Key.pomodoroWork) private var pomodoroWork = PomodoroSettings.defaultWorkMinutes
     @AppStorage(AppSettings.Key.pomodoroBreak) private var pomodoroBreak = PomodoroSettings.defaultBreakMinutes
     @AppStorage(AppSettings.Key.sessionGoal) private var sessionGoal = 0
+    @ObservedObject private var history = HistoryStore.shared
+    /// 模拟器截图：-openHistory 直接打开历史页
+    @State private var showHistory = StartView.argument("-openHistory")
+
+    static func argument(_ name: String) -> Bool {
+        #if targetEnvironment(simulator)
+        return ProcessInfo.processInfo.arguments.contains(name)
+        #else
+        return false
+        #endif
+    }
 
     private func start(_ mode: SessionMode) {
         Task {
@@ -158,6 +169,21 @@ struct StartView: View {
                     .foregroundStyle(.secondary)
             }
 
+            NavigationLink {
+                HistoryView()
+            } label: {
+                HStack {
+                    Image(systemName: "chart.bar.fill").foregroundStyle(.mint)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("History")
+                        if let s = history.summary {
+                            Text("Today \(s.todayMinutes) min").font(.caption2).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
             PermissionNotices()
 
             if let err = session.errorMessage {
@@ -178,6 +204,8 @@ struct StartView: View {
         .sheet(isPresented: $showAbout) {
             OnboardingView(mode: .about) { showAbout = false }
         }
+        .navigationDestination(isPresented: $showHistory) { HistoryView() }
+        .onAppear { history.refresh() }
         .containerBackground(Color.mint.gradient.opacity(0.22), for: .navigation)
         #if targetEnvironment(simulator)
         // 模拟器带 -demo 启动参数时自动开始，方便截图检查界面；
@@ -536,6 +564,7 @@ struct SummaryView: View {
                     .tint(.mint)
             }
         }
+        .defaultScrollAnchor(StartView.argument("-scrollBottom") ? .bottom : .top)
         .navigationTitle("Summary")
         .containerBackground(Theme.color(for: session.averageScore).gradient.opacity(0.22), for: .navigation)
     }

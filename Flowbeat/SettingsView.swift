@@ -9,6 +9,7 @@ struct SettingsView: View {
     @AppStorage(AppSettings.Key.pomodoroWork) private var pomodoroWork = PomodoroSettings.defaultWorkMinutes
     @AppStorage(AppSettings.Key.pomodoroBreak) private var pomodoroBreak = PomodoroSettings.defaultBreakMinutes
     @AppStorage(AppSettings.Key.sessionGoal) private var sessionGoal = 0
+    @AppStorage(HistoryStore.dailyGoalKey) private var dailyGoal = FocusHistory.defaultDailyGoalMinutes
 
     var body: some View {
         List {
@@ -41,11 +42,15 @@ struct SettingsView: View {
                         if m == 0 { Text("Off").tag(m) } else { Text("\(m) min").tag(m) }
                     }
                 }
+                Stepper(value: $dailyGoal, in: FocusHistory.dailyGoalRange, step: 10) {
+                    settingRow("Daily goal", minutes: dailyGoal)
+                }
             } footer: {
-                Text("Minutes with a focus score of 70 or more.")
+                Text("Minutes with a focus score of 70 or more. The daily goal sets your streak.")
             }
         }
         .navigationTitle("Settings")
+        .onChange(of: dailyGoal) { _, _ in HistoryStore.shared.refresh() }
     }
 
     private func settingRow(_ title: LocalizedStringKey, minutes: Int) -> some View {

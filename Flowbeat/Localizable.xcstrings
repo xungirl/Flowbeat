@@ -34,6 +34,26 @@
         }
       }
     },
+    "%lld%% in flow": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%% 时间在心流"
+          }
+        }
+      }
+    },
+    "%lld-day streak": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连续 %lld 天达标"
+          }
+        }
+      }
+    },
     "%lld× · %@": {
       "localizations": {
         "zh-Hans": {
@@ -227,6 +247,16 @@
         }
       }
     },
+    "Best time of day": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一天中最专注的时段"
+          }
+        }
+      }
+    },
     "Break": {
       "localizations": {
         "zh-Hans": {
@@ -303,6 +333,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "无法开始专注：%@"
+          }
+        }
+      }
+    },
+    "Daily goal": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每日目标"
+          }
+        }
+      }
+    },
+    "Day": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日期"
           }
         }
       }
@@ -417,6 +467,36 @@
         }
       }
     },
+    "Focused minutes, last 7 days": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近 7 天的专注分钟数"
+          }
+        }
+      }
+    },
+    "Goal": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标"
+          }
+        }
+      }
+    },
+    "Goal %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标 %lld 分钟"
+          }
+        }
+      }
+    },
     "Goal not reached": {
       "localizations": {
         "zh-Hans": {
@@ -487,6 +567,16 @@
         }
       }
     },
+    "History": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "历史"
+          }
+        }
+      }
+    },
     "How are you right now?": {
       "localizations": {
         "zh-Hans": {
@@ -503,6 +593,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "心流中"
+          }
+        }
+      }
+    },
+    "Last 7 days": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近 7 天"
           }
         }
       }
@@ -537,12 +637,22 @@
         }
       }
     },
-    "Minutes with a focus score of 70 or more.": {
+    "Minutes": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "按专注指数 ≥ 70 的分钟数计算。"
+            "value": "分钟"
+          }
+        }
+      }
+    },
+    "Minutes with a focus score of 70 or more. The daily goal sets your streak.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按专注指数 ≥ 70 的分钟数计算。每日目标决定连续达标天数。"
           }
         }
       }
@@ -563,6 +673,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "运动与健身：走动时自动暂停"
+          }
+        }
+      }
+    },
+    "Needs 10+ scored minutes in one hour": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同一小时内需要 10 分钟以上的数据"
           }
         }
       }
@@ -757,6 +877,26 @@
         }
       }
     },
+    "Today": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天"
+          }
+        }
+      }
+    },
+    "Today %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天 %lld 分钟"
+          }
+        }
+      }
+    },
     "Work": {
       "localizations": {
         "zh-Hans": {
@@ -773,6 +913,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "第 %lld 轮工作"
+          }
+        }
+      }
+    },
+    "min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分钟"
           }
         }
       }

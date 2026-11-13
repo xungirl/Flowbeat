@@ -556,6 +556,7 @@ final class FocusSession: NSObject, ObservableObject {
         if let data = try? encoder.encode(record), (try? data.write(to: url, options: .atomic)) != nil {
             PhoneSync.shared.send(sessionFile: url)   // 有 iPhone 端就同步过去画时间线
         }
+        Task { @MainActor in HistoryStore.shared.refresh() }   // 历史页和今天的分钟数
     }
 
     static func sessionName(for start: Date) -> String {
