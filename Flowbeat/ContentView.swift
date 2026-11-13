@@ -142,6 +142,10 @@ struct StartView: View {
                 Button { showAbout = true } label: { Image(systemName: "info.circle") }
                     .accessibilityLabel(Text("About Flowbeat"))
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink { SettingsView() } label: { Image(systemName: "gearshape") }
+                    .accessibilityLabel(Text("Settings"))
+            }
         }
         .sheet(isPresented: $showAbout) {
             OnboardingView(mode: .about) { showAbout = false }
@@ -216,7 +220,11 @@ struct MetricsPage: View {
             .padding(.horizontal, 4)
 
             // AI 那一行只在 AI build（Debug）里出现；上架版没有 AI，也不联网
-            if session.aiEnabled { AILine() }
+            if showNudgeBanner {
+                NudgeBanner()
+            } else if session.aiEnabled {
+                AILine()
+            }
         }
         .containerBackground(background.gradient.opacity(0.28), for: .tabView)
     }
@@ -257,6 +265,12 @@ struct MetricsPage: View {
                 }
             }
         }
+    }
+
+    /// 刚提醒过（8 秒内）：在圆环下面说明为什么震了一下
+    private var showNudgeBanner: Bool {
+        guard let at = session.lastNudgeAt else { return false }
+        return session.elapsed - at < 8
     }
 
     private var stateText: LocalizedStringKey {
@@ -307,6 +321,21 @@ struct AILine: View {
         case "away": return .cyan
         default: return .secondary
         }
+    }
+}
+
+/// 走神提醒后显示几秒：告诉用户刚才那一下震动是什么
+struct NudgeBanner: View {
+    var body: some View {
+        Label("Drifting? Back to it", systemImage: "hand.tap.fill")
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundStyle(.orange)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(.orange.opacity(0.15), in: Capsule())
+            .transition(.opacity)
     }
 }
 
@@ -371,7 +400,7 @@ struct ControlsPage: View {
     private func labelButton(_ title: LocalizedStringKey, icon: String, color: Color, tag: String) -> some View {
         Button {
             session.mark(tag)
-            WKInterfaceDevice.current().play(.click)
+            Haptics.label()
             marked = tag
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 if marked == tag { marked = nil }
@@ -412,6 +441,9 @@ struct SummaryView: View {
                          Text(verbatim: session.focusedRatio.map { "\(Int($0 * 100))%" } ?? "--"))
                     stat("figure.walk", .cyan, "Away", Text("\(session.awayCount)× · \(timeString(session.awaySeconds))"))
                     stat("shoeprints.fill", .orange, "Steps", Text(verbatim: "\(session.steps)"))
+                    if session.nudgeCount > 0 {
+                        stat("hand.tap.fill", .yellow, "Nudges", Text(verbatim: "\(session.nudgeCount)"))
+                    }
                 }
                 .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
 

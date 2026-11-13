@@ -27,6 +27,12 @@ final class FocusSession: NSObject, ObservableObject {
     @Published private(set) var awaySeconds: TimeInterval = 0
     @Published private(set) var steps = 0
 
+    // 走神提醒：连续走神 N 分钟轻震一下（状态机在 FlowbeatCore/DistractionNudge.swift）
+    private var nudge = DistractionNudge()
+    @Published private(set) var nudgeCount = 0
+    /// 最近一次提醒在第几秒（运行页据此显示几秒钟的提示条）
+    @Published private(set) var lastNudgeAt: TimeInterval?
+
     private let healthStore = HKHealthStore()
     private let motionManager = CMMotionManager()
     private let activityManager = CMMotionActivityManager()
@@ -156,6 +162,9 @@ final class FocusSession: NSObject, ObservableObject {
         self.motionWindow.reset()
         self.syncAway()
         self.steps = 0
+        self.nudge = DistractionNudge(settings: AppSettings.nudge)
+        self.nudgeCount = 0
+        self.lastNudgeAt = nil
         self.aiJudgment = nil
         self.aiReview = nil
         self.aiError = nil
@@ -390,6 +399,14 @@ final class FocusSession: NSObject, ObservableObject {
         if result.didFinishCalibration { phase = .running }
         score = engine.score
         syncAway()
+
+        let nudgeInput = DistractionNudge.Input(elapsed: elapsed, score: result.sampleScore,
+                                                calibrating: phase == .calibrating, away: isAway)
+        if nudge.update(nudgeInput) {
+            Haptics.nudge()
+            nudgeCount = nudge.nudgeCount
+            lastNudgeAt = elapsed
+        }
 
         samples.append(FocusSample(t: Date(), heartRate: heartRate, motion: motion,
                                    score: result.sampleScore, label: pendingLabel, away: isAway))

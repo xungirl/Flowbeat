@@ -4,6 +4,16 @@
     "%lld": {
       "shouldTranslate": false
     },
+    "%lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 分钟"
+          }
+        }
+      }
+    },
     "%lld× · %@": {
       "localizations": {
         "zh-Hans": {
@@ -33,6 +43,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "专注时会启动一个「身心」类体能训练来读取心率；结束时丢弃，不会存进「健康」。"
+          }
+        }
+      }
+    },
+    "A gentle tap on your wrist when you have been distracted for a while. Never while you walk, calibrate or take a break.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "走神一阵子时，手腕上轻轻震一下。走路、校准和休息时不会提醒。"
           }
         }
       }
@@ -127,12 +147,32 @@
         }
       }
     },
+    "After": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "走神多久后提醒"
+          }
+        }
+      }
+    },
     "Allow Health access: Settings → Health → Apps → Flowbeat.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "请允许「健康」权限：设置 → 健康 → App → 心流。"
+          }
+        }
+      }
+    },
+    "At most every": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "两次提醒至少间隔"
           }
         }
       }
@@ -247,12 +287,32 @@
         }
       }
     },
+    "Distraction nudge": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "走神提醒"
+          }
+        }
+      }
+    },
     "Done": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "完成"
+          }
+        }
+      }
+    },
+    "Drifting? Back to it": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "走神了？回来吧"
           }
         }
       }
@@ -447,6 +507,16 @@
         }
       }
     },
+    "Nudges": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提醒"
+          }
+        }
+      }
+    },
     "Off track": {
       "localizations": {
         "zh-Hans": {
@@ -463,6 +533,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "坐下自动继续"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
           }
         }
       }
