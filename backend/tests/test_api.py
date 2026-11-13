@@ -51,3 +51,21 @@ def test_prompt_includes_user_examples():
     })
     msg = prompts.judge_user_message(req)
     assert "标注过的例子" in msg and '"label":"distracted"' in msg
+
+
+def test_prompt_omits_rule_score_by_default():
+    req = JudgeRequest.model_validate({
+        "window": WINDOW,
+        "examples": [{"label": "focused", "window": WINDOW}],
+    })
+    msg = prompts.judge_user_message(req)
+    # 当前窗口和例子里都不能出现规则分，否则模型会照抄（锚定偏差）
+    assert "rule_score_mean" not in msg
+    assert '"still_ratio":0.95' in msg
+
+
+def test_prompt_can_include_rule_score_behind_flag(monkeypatch):
+    req = JudgeRequest.model_validate({"window": WINDOW})
+    assert '"rule_score_mean":92' in prompts.judge_user_message(req, include_rule_score=True)
+    monkeypatch.setenv("JUDGE_INCLUDE_RULE_SCORE", "1")
+    assert '"rule_score_mean":92' in prompts.judge_user_message(req)

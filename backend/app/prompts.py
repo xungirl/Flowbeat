@@ -1,8 +1,17 @@
 """提示词。系统提示词保持不变（利于 prompt caching），每次变化的数据都放在 user 消息里。"""
 
 import json
+import os
 
 from .schemas import JudgeRequest, ReviewRequest
+
+# 手表本地规则分。默认不发给模型：2026-11-11 的对比里，模型给的分数和它一模一样（锚定偏差），
+# 等于没有独立判断。需要复现旧行为时设 JUDGE_INCLUDE_RULE_SCORE=1。
+RULE_SCORE_FIELD = "rule_score_mean"
+
+
+def include_rule_score_default() -> bool:
+    return os.getenv("JUDGE_INCLUDE_RULE_SCORE", "0").lower() in ("1", "true", "yes")
 
 JUDGE_SYSTEM = """\
 你是 Flowbeat（心流）的专注判断器。Flowbeat 是一款 Apple Watch app，用户在学习或工作时开启。
@@ -36,16 +45,25 @@ def _dump(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
 
 
-def judge_user_message(req: JudgeRequest) -> str:
+def _window_dict(window, include_rule_score: bool) -> dict:
+    exclude = None if include_rule_score else {RULE_SCORE_FIELD}
+    return window.model_dump(exclude_none=True, exclude=exclude)
+
+
+def judge_user_message(req: JudgeRequest, include_rule_score: bool | None = None) -> str:
+    """拼 user 消息。include_rule_score=None 时读环境变量（默认 False）。
+    规则分在「当前窗口」和「标注例子」里都要去掉，否则模型可以从例子里抄分数。"""
+    if include_rule_score is None:
+        include_rule_score = include_rule_score_default()
     parts = []
     if req.examples:
-        lines = [_dump({"label": e.label, **e.window.model_dump(exclude_none=True)}) for e in req.examples]
+        lines = [_dump({"label": e.label, **_window_dict(e.window, include_rule_score)}) for e in req.examples]
         parts.append("这个用户自己标注过的例子：\n" + "\n".join(lines))
     else:
         parts.append("这个用户还没有标注过例子，请按常识判断。")
     if req.recent:
         parts.append("本次前几个窗口的判断（从早到晚）：\n" + "\n".join(_dump(j.model_dump()) for j in req.recent))
-    parts.append("请判断这个窗口：\n" + _dump(req.window.model_dump(exclude_none=True)))
+    parts.append("请判断这个窗口：\n" + _dump(_window_dict(req.window, include_rule_score)))
     return "\n\n".join(parts)
 
 

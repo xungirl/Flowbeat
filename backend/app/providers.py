@@ -27,7 +27,7 @@ class ProviderError(Exception):
 class Provider(Protocol):
     name: str
 
-    async def judge(self, req: JudgeRequest) -> Judgment: ...
+    async def judge(self, req: JudgeRequest, include_rule_score: bool | None = None) -> Judgment: ...
     async def review(self, req: ReviewRequest) -> Review: ...
 
 
@@ -68,8 +68,8 @@ class ClaudeProvider:
         log.info("claude %s in=%s cached=%s out=%s", self.model, u.input_tokens, u.cache_read_input_tokens, u.output_tokens)
         return resp.parsed_output
 
-    async def judge(self, req: JudgeRequest) -> Judgment:
-        j = await self._parse(prompts.JUDGE_SYSTEM, prompts.judge_user_message(req), Judgment)
+    async def judge(self, req: JudgeRequest, include_rule_score: bool | None = None) -> Judgment:
+        j = await self._parse(prompts.JUDGE_SYSTEM, prompts.judge_user_message(req, include_rule_score), Judgment)
         j.score = max(0, min(100, j.score))
         return j
 
@@ -123,8 +123,8 @@ class QwenProvider:
         except ValidationError as e:
             raise ProviderError("千问返回的格式不对", 502) from e
 
-    async def judge(self, req: JudgeRequest) -> Judgment:
-        j = await self._json(prompts.JUDGE_SYSTEM, prompts.judge_user_message(req), Judgment)
+    async def judge(self, req: JudgeRequest, include_rule_score: bool | None = None) -> Judgment:
+        j = await self._json(prompts.JUDGE_SYSTEM, prompts.judge_user_message(req, include_rule_score), Judgment)
         j.score = max(0, min(100, j.score))
         return j
 
@@ -137,7 +137,7 @@ class FakeProvider:
 
     name = "fake"
 
-    async def judge(self, req: JudgeRequest) -> Judgment:
+    async def judge(self, req: JudgeRequest, include_rule_score: bool | None = None) -> Judgment:
         w = req.window
         if w.away_seconds > 60:
             return Judgment(state="away", score=0, reason="【模拟】大部分时间在走动")
