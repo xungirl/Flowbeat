@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.xungirl
   deploymentTarget:
     watchOS: "10.0"
+    iOS: "17.0"
 packages:
   # 纯逻辑放在本地 Swift package 里：macOS 上 `swift test`，watchOS 模拟器上 `xcodebuild test` 都能跑
   FlowbeatCore:
@@ -21,14 +22,17 @@ targets:
       - package: FlowbeatCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat
+        # 手表 app 的 bundle id 必须以 iPhone app 的为前缀，才能作为它的伴侣安装
+        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat.watchkitapp
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         # 在 Xcode 里 Signing & Capabilities 选你自己的 Team 后会写进这里
         DEVELOPMENT_TEAM: ""
         INFOPLIST_KEY_CFBundleDisplayName: Flowbeat
-        INFOPLIST_KEY_WKWatchOnly: YES
+        # 有 iPhone 伴侣（同步、画图），但手表 app 不依赖它也能独立运行
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.xungirl.flowbeat
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
         INFOPLIST_KEY_NSHealthShareUsageDescription: 读取心率，用来估计你是否处于专注状态。
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: 开启专注时段需要启动一个「身心」类体能训练以持续读取心率（结束时不会保存）。
         INFOPLIST_KEY_NSMotionUsageDescription: 识别你是否起身走动，走动时暂停打分，不算作走神。
@@ -44,6 +48,27 @@ targets:
       properties:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
+  FlowbeatPhone:
+    type: application
+    platform: iOS
+    sources: [FlowbeatPhone]
+    dependencies:
+      - package: FlowbeatCore
+        product: FlowbeatCore
+      - package: FlowbeatCore
+        product: FlowbeatPhoneUI
+      # 把手表 app 嵌进 iPhone app 的 Watch/ 目录（伴侣 app 的安装方式）
+      - target: Flowbeat
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
+        INFOPLIST_KEY_CFBundleDisplayName: Flowbeat
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        TARGETED_DEVICE_FAMILY: "1"
 schemes:
   Flowbeat:
     build:
@@ -56,3 +81,9 @@ schemes:
       gatherCoverageData: true
       targets:
         - package: FlowbeatCore/FlowbeatCoreTests
+  FlowbeatPhone:
+    build:
+      targets:
+        FlowbeatPhone: all
+    run:
+      config: Debug

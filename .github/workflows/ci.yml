@@ -52,3 +52,54 @@ jobs:
       - uses: actions/checkout@v4
       - run: swift --version
       - run: swift test --package-path FlowbeatCore
+
+  apps:
+    name: Watch tests + iPhone app build and simulator screenshots
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      - name: Pick simulators
+        run: |
+          xcrun simctl list devices available -j > devices.json
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import json
+          d = json.load(open("devices.json"))["devices"]
+          def pick(prefix, name):
+              for rt in sorted(d, reverse=True):
+                  if prefix in rt:
+                      for dev in d[rt]:
+                          if dev["name"].startswith(name):
+                              return dev["udid"]
+          print(f"IPHONE={pick('iOS', 'iPhone')}")
+          print(f"WATCH={pick('watchOS', 'Apple Watch')}")
+          PY
+          cat "$GITHUB_ENV"
+      - name: FlowbeatCore tests on a watchOS simulator (xcodebuild)
+        run: |
+          xcodebuild test -project Flowbeat.xcodeproj -scheme Flowbeat -destination "id=$WATCH" \
+            -derivedDataPath dd CODE_SIGNING_ALLOWED=NO | tail -n 5
+      - name: Build iPhone app (embeds the watch app)
+        run: |
+          xcodebuild build -project Flowbeat.xcodeproj -scheme FlowbeatPhone -destination "id=$IPHONE" \
+            -derivedDataPath dd CODE_SIGNING_ALLOWED=NO | tail -n 3
+          ls dd/Build/Products/Debug-iphonesimulator/FlowbeatPhone.app/Watch/
+      - name: Screenshot the iPhone app in the simulator
+        run: |
+          mkdir -p shots
+          xcrun simctl boot "$IPHONE"
+          xcrun simctl bootstatus "$IPHONE" -b
+          xcrun simctl status_bar "$IPHONE" override --time 9:41 || true
+          xcrun simctl install "$IPHONE" dd/Build/Products/Debug-iphonesimulator/FlowbeatPhone.app
+          xcrun simctl launch "$IPHONE" com.xungirl.flowbeat
+          sleep 8
+          xcrun simctl io "$IPHONE" screenshot shots/phone-list.png
+          xcrun simctl terminate "$IPHONE" com.xungirl.flowbeat
+          xcrun simctl launch "$IPHONE" com.xungirl.flowbeat -openFirst
+          sleep 8
+          xcrun simctl io "$IPHONE" screenshot shots/phone-detail.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iphone-screenshots
+          path: shots/

@@ -48,14 +48,17 @@ public struct SessionRecord: Codable, Equatable, Sendable {
 public struct JudgedWindow: Codable, Equatable, Sendable {
     public let minute: Int
     public let judgment: Judgment
+    /// 窗口结束时距开始的秒数（比 minute 精确；模拟器里 30 秒一个窗口，两个窗口会落在同一分钟）
+    public let endSeconds: Double?
 
-    public init(minute: Int, judgment: Judgment) {
+    public init(minute: Int, judgment: Judgment, endSeconds: Double? = nil) {
         self.minute = minute
         self.judgment = judgment
+        self.endSeconds = endSeconds
     }
 }
 
-public struct WindowSummary: Codable, Equatable, Sendable {
+public struct WindowSummary: Codable, Hashable, Sendable {
     public var minuteOfSession: Int
     public var localTime: String
     public var baselineHr: Double?
@@ -121,7 +124,7 @@ public struct WindowSummary: Codable, Equatable, Sendable {
 func round1(_ x: Double) -> Double { (x * 10).rounded() / 10 }
 func round3(_ x: Double) -> Double { (x * 1000).rounded() / 1000 }
 
-public struct Judgment: Codable, Equatable, Sendable {
+public struct Judgment: Codable, Hashable, Sendable {
     public var state: String   // focused / distracted / away / unclear
     public var score: Int
     public var reason: String

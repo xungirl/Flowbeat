@@ -110,8 +110,12 @@ struct StartView: View {
             guard args.contains("-demo") else { return }
             await session.start()
             if let i = args.firstIndex(of: "-demoStopAfter"), i + 1 < args.count, let secs = Double(args[i + 1]) {
-                try? await Task.sleep(nanoseconds: UInt64(secs * 1_000_000_000))
-                await session.stop()
+                // 不能直接在 .task 里 sleep：开始后 StartView 就消失了，.task 被取消，sleep 立刻抛错 → 马上 stop。
+                // 用一个不跟视图生命周期绑定的 Task。
+                Task { [session] in
+                    try await Task.sleep(nanoseconds: UInt64(secs * 1_000_000_000))
+                    await session.stop()
+                }
             }
         }
         #endif

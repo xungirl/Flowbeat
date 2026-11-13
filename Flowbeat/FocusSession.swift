@@ -49,6 +49,8 @@ final class FocusSession: NSObject, ObservableObject {
     private(set) var windows: [WindowSummary] = []
     private(set) var judgments: [Judgment] = []
     private(set) var timeline: [JudgedWindow] = []
+    /// 每个窗口在第几秒结束（判断可能离线排队后才回来，用它把判断放回时间轴的正确位置）
+    private var windowEnds: [WindowSummary: TimeInterval] = [:]
     private var lastJudgeAt: TimeInterval = 0
     /// 所有判断请求都走这个队列：在线时等于直接发；连不上后端时排队，按 15 s → 30 s → … ≤ 5 min 退避重试，最多 30 条
     private var sync = JudgeSync { try await AIClient.judge($0) }
@@ -82,6 +84,13 @@ final class FocusSession: NSObject, ObservableObject {
     // MARK: - 开始 / 结束
 
     func start() async {
+        #if targetEnvironment(simulator)
+        // 模拟器 -demo：传感器本来就是模拟的，跳过 HealthKit 授权弹窗和 workout，直接开始（方便自动化跑 demo）
+        if ProcessInfo.processInfo.arguments.contains("-demo") {
+            await MainActor.run { self.beginSession(at: Date()) }
+            return
+        }
+        #endif
         guard await requestAuthorization() else { return }
 
         let config = HKWorkoutConfiguration()
@@ -100,37 +109,50 @@ final class FocusSession: NSObject, ObservableObject {
             session.startActivity(with: now)
             try await builder.beginCollection(at: now)
 
-            await MainActor.run {
-                #if targetEnvironment(simulator)
-                self.engine = FocusEngine(calibrationSeconds: 10)
-                #else
-                self.engine = FocusEngine(calibrationSeconds: 60)
-                #endif
-                self.samples = []
-                self.heartRate = nil
-                self.score = nil
-                self.elapsed = 0
-                self.motionWindow.reset()
-                self.syncAway()
-                self.steps = 0
-                self.aiJudgment = nil
-                self.aiReview = nil
-                self.aiError = nil
-                self.windows = []
-                self.judgments = []
-                self.timeline = []
-                self.sync = JudgeSync { try await AIClient.judge($0) }   // 每次专注一个新队列
-                self.pendingJudgments = 0
-                self.lastJudgeAt = 0
-                self.startDate = now
-                self.startActivityTracking(from: now)
-                self.phase = .calibrating
-                self.startMotion()
-                self.startTicking()
-            }
+            await MainActor.run { self.beginSession(at: now) }
         } catch {
             await setError("启动失败：\(error.localizedDescription)")
         }
+    }
+
+    /// 清空上一次的状态，开始校准和计时
+    @MainActor private func beginSession(at now: Date) {
+        #if targetEnvironment(simulator)
+        self.engine = FocusEngine(calibrationSeconds: 10)
+        #else
+        self.engine = FocusEngine(calibrationSeconds: 60)
+        #endif
+        self.samples = []
+        self.heartRate = nil
+        self.score = nil
+        self.elapsed = 0
+        self.motionWindow.reset()
+        self.syncAway()
+        self.steps = 0
+        self.aiJudgment = nil
+        self.aiReview = nil
+        self.aiError = nil
+        self.windows = []
+        self.judgments = []
+        self.timeline = []
+        self.windowEnds = [:]
+        self.sync = JudgeSync { try await AIClient.judge($0) }   // 每次专注一个新队列
+        self.pendingJudgments = 0
+        self.lastJudgeAt = 0
+        self.startDate = now
+        self.phase = .calibrating
+        #if targetEnvironment(simulator)
+        // 演示模式里动作 / 走路 / 步数全由 simulateSensors 模拟，不碰 CoreMotion，
+        // 也就不会弹「活动与体能训练」权限窗（它会挡住自动化 demo）
+        if !ProcessInfo.processInfo.arguments.contains("-demo") {
+            self.startActivityTracking(from: now)
+            self.startMotion()
+        }
+        #else
+        self.startActivityTracking(from: now)
+        self.startMotion()
+        #endif
+        self.startTicking()
     }
 
     func stop() async {
@@ -177,6 +199,7 @@ final class FocusSession: NSObject, ObservableObject {
         let n = Int(AIConfig.judgeInterval)
         let window = WindowSummary.make(from: Array(samples.suffix(n)), baseline: engine.baselineHR, sessionStart: startDate)
         windows.append(window)
+        windowEnds[window] = elapsed
         let req = JudgeRequest(window: window, examples: LabelStore.examples, recent: Array(judgments.suffix(3)))
         let sync = self.sync
         Task {
@@ -199,7 +222,8 @@ final class FocusSession: NSObject, ObservableObject {
     @MainActor private func apply(_ result: SyncResult) {
         for d in result.delivered {
             judgments.append(d.judgment)
-            timeline.append(JudgedWindow(minute: d.request.window.minuteOfSession, judgment: d.judgment))
+            timeline.append(JudgedWindow(minute: d.request.window.minuteOfSession, judgment: d.judgment,
+                                         endSeconds: windowEnds[d.request.window].map { ($0 * 10).rounded() / 10 }))
             if d.request.window == windows.last { aiJudgment = d.judgment }
         }
         pendingJudgments = result.pending
@@ -314,11 +338,21 @@ final class FocusSession: NSObject, ObservableObject {
     var calibrationSeconds: TimeInterval { engine.calibrationSeconds }
 
     #if targetEnvironment(simulator)
+    private var lastDemoLabelSecond = -1
+
     /// 模拟器没有真传感器：校准后按 60 秒循环造假数据——专注 35 秒 → 走神 10 秒 → 起身走路 15 秒。
     /// 真机不会编译这段。
     private func simulateSensors() {
         let afterCalibration = elapsed - engine.calibrationSeconds
         let t = afterCalibration > 0 ? afterCalibration.truncatingRemainder(dividingBy: 60) : 0
+        // -demoLabels：每个循环在专注段第 20 秒、走神段第 40 秒自动打一次标签（用来生成带标签的示例存档）
+        if ProcessInfo.processInfo.arguments.contains("-demoLabels"), afterCalibration > 0 {
+            let sec = Int(afterCalibration)
+            if sec != lastDemoLabelSecond, sec % 60 == 20 || sec % 60 == 40 {
+                lastDemoLabelSecond = sec
+                mark(sec % 60 == 20 ? "focused" : "distracted")
+            }
+        }
         switch t {
         case 45...:   // 走路
             setAway(true)
@@ -351,8 +385,9 @@ final class FocusSession: NSObject, ObservableObject {
         let encoder = FlowbeatJSON.sessionEncoder
         let record = SessionRecord(samples: samples, windows: windows, judgments: judgments, review: aiReview,
                                    timeline: timeline)
-        if let data = try? encoder.encode(record) {
-            try? data.write(to: dir.appendingPathComponent("\(name).json"))
+        let url = dir.appendingPathComponent("\(name).json")
+        if let data = try? encoder.encode(record), (try? data.write(to: url)) != nil {
+            PhoneSync.shared.send(sessionFile: url)   // 有 iPhone 端就同步过去画时间线
         }
     }
 
