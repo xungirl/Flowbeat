@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct FlowbeatApp: App {
     @StateObject private var session = FocusSession()
+    @StateObject private var permissions = PermissionCenter()
 
     init() {
         PhoneSync.shared.activate()
@@ -12,6 +13,7 @@ struct FlowbeatApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(session)
+                .environmentObject(permissions)
         }
     }
 }

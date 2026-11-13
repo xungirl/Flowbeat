@@ -27,12 +27,32 @@
         }
       }
     },
+    "A focus session runs a Mind & Body workout to read your heart rate. It is discarded and never saved to Health.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注时会启动一个「身心」类体能训练来读取心率；结束时丢弃，不会存进「健康」。"
+          }
+        }
+      }
+    },
     "AI is watching…": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "AI 正在观察…"
+          }
+        }
+      }
+    },
+    "AI judge is on: every 2 minutes a summary of your heart rate and motion is sent to the backend configured in this build.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 判断已开启：每 2 分钟把心率和动作的统计摘要发到这个版本里配置的后端。"
           }
         }
       }
@@ -83,6 +103,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "AI 等待校准完成"
+          }
+        }
+      }
+    },
+    "About Flowbeat": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于心流"
           }
         }
       }
@@ -147,6 +177,36 @@
         }
       }
     },
+    "Check again": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再检查一次"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续"
+          }
+        }
+      }
+    },
     "Couldn't request Health access: %@": {
       "localizations": {
         "zh-Hans": {
@@ -163,6 +223,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "无法开始专注：%@"
+          }
+        }
+      }
+    },
+    "Developer build": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开发版"
           }
         }
       }
@@ -207,6 +277,16 @@
         }
       }
     },
+    "Estimates how focused you are from your heart rate and wrist motion, as a 0–100 score.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "根据心率和手腕动作，估计你有多专注，给出 0–100 的专注指数。"
+          }
+        }
+      }
+    },
     "Flowbeat": {
       "localizations": {
         "zh-Hans": {
@@ -243,6 +323,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "这台设备不支持「健康」数据。"
+          }
+        }
+      }
+    },
+    "Heart rate is off, so Flowbeat can't estimate focus. Turn it on in the Health app on your iPhone (Sharing → Apps → Flowbeat) or in Settings → Health on your watch.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "心率权限已关闭，心流无法估计专注。请在 iPhone 的「健康」App（共享 → App → 心流）或手表的「设置 → 健康」里打开。"
+          }
+        }
+      }
+    },
+    "Heart rate, from Health": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "心率（来自「健康」）"
+          }
+        }
+      }
+    },
+    "Heart rate, motion and your sessions are stored only on this Apple Watch. No account, no servers, no tracking.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "心率、动作和专注记录只保存在这块 Apple Watch 上。没有账号、没有服务器、不追踪。"
           }
         }
       }
@@ -287,6 +397,56 @@
         }
       }
     },
+    "Motion & Fitness is off, so walking won't pause scoring. Settings → Privacy & Security → Motion & Fitness.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「运动与健身」已关闭，走动时不会自动暂停。设置 → 隐私与安全性 → 运动与健身。"
+          }
+        }
+      }
+    },
+    "Motion & Fitness, to pause while you walk": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运动与健身：走动时自动暂停"
+          }
+        }
+      }
+    },
+    "Next, Flowbeat asks for:": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接下来，心流会请求："
+          }
+        }
+      }
+    },
+    "Not a medical device": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不是医疗设备"
+          }
+        }
+      }
+    },
+    "Not a medical device.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不是医疗设备。"
+          }
+        }
+      }
+    },
     "Off track": {
       "localizations": {
         "zh-Hans": {
@@ -327,6 +487,16 @@
         }
       }
     },
+    "Stays on your watch": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据只在手表上"
+          }
+        }
+      }
+    },
     "Steps": {
       "localizations": {
         "zh-Hans": {
@@ -353,6 +523,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "本次总结"
+          }
+        }
+      }
+    },
+    "The score is an estimate for personal reflection. Flowbeat does not diagnose, treat or monitor any health condition.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注指数只是一个估计，供你自己参考。心流不做任何诊断、治疗，也不监测任何健康状况。"
           }
         }
       }

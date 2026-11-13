@@ -23,15 +23,41 @@ enum Theme {
 
 struct ContentView: View {
     @EnvironmentObject var session: FocusSession
+    @EnvironmentObject var permissions: PermissionCenter
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var showOnboarding = ContentView.needsOnboarding()
 
     var body: some View {
-        NavigationStack {
-            switch session.phase {
-            case .idle: StartView()
-            case .calibrating, .running: RunningView()
-            case .finished: SummaryView()
+        Group {
+            if showOnboarding {
+                // 首次启动：先说明，再在最后一页请求权限
+                OnboardingView(mode: .firstLaunch) {
+                    OnboardingState(store: UserDefaults.standard).complete()
+                    showOnboarding = false
+                }
+            } else {
+                NavigationStack {
+                    switch session.phase {
+                    case .idle: StartView()
+                    case .calibrating, .running: RunningView()
+                    case .finished: SummaryView()
+                    }
+                }
             }
         }
+        // 用户可能去「设置」里改了权限，回到 app 时重新读一次
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { permissions.refresh() }
+        }
+    }
+
+    static func needsOnboarding() -> Bool {
+        #if targetEnvironment(simulator)
+        // 演示模式（-demo）直接进开始页，方便自动化截图
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-demo") || args.contains("-demoDenied") { return false }
+        #endif
+        return OnboardingState(store: UserDefaults.standard).needsOnboarding
     }
 }
 
@@ -64,9 +90,12 @@ struct Ring<Center: View>: View {
 
 struct StartView: View {
     @EnvironmentObject var session: FocusSession
+    @EnvironmentObject var permissions: PermissionCenter
     @State private var breathe = false
+    @State private var showAbout = false
 
     var body: some View {
+        ScrollView {
         VStack(spacing: 8) {
             ZStack {
                 Circle()
@@ -90,16 +119,32 @@ struct StartView: View {
             }
 
             Button {
-                Task { await session.start() }
+                Task {
+                    await session.start()
+                    permissions.refresh()
+                }
             } label: {
                 Label("Start Focus", systemImage: "play.fill").font(.headline)
             }
             .buttonStyle(.borderedProminent)
             .tint(.mint)
+            .disabled(!permissions.readiness.canStart)
+
+            PermissionNotices()
 
             if let err = session.errorMessage {
                 Text(err).font(.caption2).foregroundStyle(.red).multilineTextAlignment(.center)
             }
+        }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { showAbout = true } label: { Image(systemName: "info.circle") }
+                    .accessibilityLabel(Text("About Flowbeat"))
+            }
+        }
+        .sheet(isPresented: $showAbout) {
+            OnboardingView(mode: .about) { showAbout = false }
         }
         .containerBackground(Color.mint.gradient.opacity(0.22), for: .navigation)
         #if targetEnvironment(simulator)
