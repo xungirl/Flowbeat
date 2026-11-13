@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Flowbeat iPhone companion privacy manifest (not shipped in v1; kept ready for v1.1).
+  - No tracking, no collected data: sessions arrive from the watch over WatchConnectivity
+    and are stored only in the app's Documents folder.
+  - Required-reason APIs: none used (no UserDefaults, file timestamps, boot time, disk space).
+    Re-check with a grep before shipping if code changes.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

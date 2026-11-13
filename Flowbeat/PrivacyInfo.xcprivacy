@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Flowbeat watch app privacy manifest (v1, AI feature flag OFF).
+  - No tracking, no tracking domains.
+  - No collected data: heart rate, motion and session files never leave the device
+    (Release builds contain no networking code; see scripts/verify_release_offline.sh).
+  - Required-reason APIs actually used (grep of Flowbeat/ and FlowbeatCore/Sources):
+      UserDefaults → CA92.1 (onboarding-completed flag; AI label store in Debug builds only).
+    Not used: file timestamp APIs, system boot time, disk space, active keyboards.
+  If the AI judge is ever shipped, window summaries derived from heart rate are sent to a
+  backend and a third-party LLM: NSPrivacyCollectedDataTypes must then declare Health
+  (and probably Fitness) data, linked = false, tracking = false, purpose App Functionality.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
