@@ -1,81 +1,8 @@
 import Foundation
+import FlowbeatCore
 
-// 手表 ↔ 后端的数据格式，和 backend/app/schemas.py 一一对应。
-// JSON 用 snake_case（编码器自动把 hrMean 转成 hr_mean）。
-
-struct WindowSummary: Codable {
-    var minuteOfSession: Int
-    var localTime: String
-    var baselineHr: Double?
-    var hrMean: Double?
-    var hrMin: Double?
-    var hrMax: Double?
-    var hrTrend: Double?
-    var motionMean: Double
-    var motionMax: Double
-    var stillRatio: Double
-    var awaySeconds: Int
-    var ruleScoreMean: Double?
-
-    /// 把一段逐秒样本压缩成摘要：只发统计量，不发原始数据，省流量也更好让模型理解
-    static func make(from samples: [FocusSample], baseline: Double?, sessionStart: Date) -> WindowSummary {
-        let hrs = samples.compactMap(\.heartRate)
-        let motions = samples.map(\.motion)
-        let scores = samples.compactMap(\.score)
-        let end = samples.last?.t ?? Date()
-        let fmt = DateFormatter()
-        fmt.dateFormat = "HH:mm"
-        return WindowSummary(
-            minuteOfSession: Int(end.timeIntervalSince(sessionStart) / 60),
-            localTime: fmt.string(from: end),
-            baselineHr: baseline.map(round1),
-            hrMean: hrs.isEmpty ? nil : round1(hrs.reduce(0, +) / Double(hrs.count)),
-            hrMin: hrs.min().map(round1),
-            hrMax: hrs.max().map(round1),
-            hrTrend: (hrs.first != nil && hrs.last != nil) ? round1(hrs.last! - hrs.first!) : nil,
-            motionMean: round3(motions.isEmpty ? 0 : motions.reduce(0, +) / Double(motions.count)),
-            motionMax: round3(motions.max() ?? 0),
-            stillRatio: round3(motions.isEmpty ? 0 : Double(motions.filter { $0 < 0.03 }.count) / Double(motions.count)),
-            awaySeconds: samples.filter(\.away).count,
-            ruleScoreMean: scores.isEmpty ? nil : round1(scores.reduce(0, +) / Double(scores.count))
-        )
-    }
-}
-
-private func round1(_ x: Double) -> Double { (x * 10).rounded() / 10 }
-private func round3(_ x: Double) -> Double { (x * 1000).rounded() / 1000 }
-
-struct Judgment: Codable, Equatable {
-    var state: String   // focused / distracted / away / unclear
-    var score: Int
-    var reason: String
-}
-
-struct LabeledExample: Codable {
-    var window: WindowSummary
-    var label: String   // focused / distracted
-}
-
-struct Review: Codable {
-    var summary: String
-    var tip: String
-}
-
-private struct JudgeRequest: Codable {
-    var window: WindowSummary
-    var examples: [LabeledExample]
-    var recent: [Judgment]
-}
-
-struct ReviewRequest: Codable {
-    var durationMinutes: Int
-    var averageScore: Double?
-    var focusedRatio: Double?
-    var awayCount: Int
-    var awayMinutes: Double
-    var windows: [WindowSummary]
-    var judgments: [Judgment]
-}
+// 数据格式（WindowSummary / Judgment / LabeledExample / Review / 请求体）都在 FlowbeatCore/Models.swift，
+// 这里只放和网络、存储有关的部分。
 
 // MARK: - 配置
 
@@ -101,16 +28,8 @@ enum AIConfig {
 // MARK: - 网络
 
 enum AIClient {
-    private static let encoder: JSONEncoder = {
-        let e = JSONEncoder()
-        e.keyEncodingStrategy = .convertToSnakeCase
-        return e
-    }()
-    private static let decoder: JSONDecoder = {
-        let d = JSONDecoder()
-        d.keyDecodingStrategy = .convertFromSnakeCase
-        return d
-    }()
+    private static let encoder = FlowbeatJSON.encoder
+    private static let decoder = FlowbeatJSON.decoder
 
     static func judge(window: WindowSummary, recent: [Judgment]) async throws -> Judgment {
         let req = JudgeRequest(window: window, examples: LabelStore.examples, recent: Array(recent.suffix(3)))
@@ -149,9 +68,7 @@ enum LabelStore {
     }
 
     static func add(_ example: LabeledExample) {
-        var list = examples
-        list.append(example)
-        if list.count > maxCount { list.removeFirst(list.count - maxCount) }
+        let list = LabeledExample.appending(example, to: examples, maxCount: maxCount)
         if let data = try? JSONEncoder().encode(list) {
             UserDefaults.standard.set(data, forKey: key)
         }

@@ -8,3 +8,7 @@ backend/.venv/
 __pycache__/
 .pytest_cache/
 .env
+
+# Swift package build output
+FlowbeatCore/.build/
+FlowbeatCore/.swiftpm/

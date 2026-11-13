@@ -3,6 +3,10 @@ options:
   bundleIdPrefix: com.xungirl
   deploymentTarget:
     watchOS: "10.0"
+packages:
+  # 纯逻辑放在本地 Swift package 里：macOS 上 `swift test`，watchOS 模拟器上 `xcodebuild test` 都能跑
+  FlowbeatCore:
+    path: FlowbeatCore
 settings:
   base:
     SWIFT_VERSION: "5.0"
@@ -13,6 +17,8 @@ targets:
     type: application
     platform: watchOS
     sources: [Flowbeat]
+    dependencies:
+      - package: FlowbeatCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat
@@ -38,3 +44,15 @@ targets:
       properties:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
+schemes:
+  Flowbeat:
+    build:
+      targets:
+        Flowbeat: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      gatherCoverageData: true
+      targets:
+        - package: FlowbeatCore/FlowbeatCoreTests

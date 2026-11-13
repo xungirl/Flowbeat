@@ -1,26 +1,10 @@
 import Foundation
 import HealthKit
 import CoreMotion
+import FlowbeatCore
 
-/// 一个时间点的记录。存成 JSON，以后拿来画曲线、训练你自己的模型。
-struct FocusSample: Codable {
-    let t: Date
-    let heartRate: Double?
-    let motion: Double
-    let score: Double?
-    /// 你手动打的标签："focused" / "distracted"，平时为 nil
-    let label: String?
-    /// 这一秒是否离座（走路 / 跑步），离座时不打分
-    var away: Bool = false
-}
-
-/// 一次专注的完整存档：逐秒样本 + AI 窗口摘要 + AI 判断 + 复盘
-struct SessionRecord: Codable {
-    let samples: [FocusSample]
-    let windows: [WindowSummary]
-    let judgments: [Judgment]
-    let review: Review?
-}
+// FocusSample / SessionRecord / 打分和离座状态机都在 FlowbeatCore（纯逻辑，有单元测试）。
+// 这个文件只管传感器、计时器、网络和 UI 状态。
 
 /// 负责：HealthKit 授权 → 开 workout session 拿实时心率 → CoreMotion 拿手腕动作 → 每秒算一次分。
 ///
@@ -37,14 +21,11 @@ final class FocusSession: NSObject, ObservableObject {
     @Published var errorMessage: String?
     @Published private(set) var samples: [FocusSample] = []
 
-    // 离座检测：系统判断你在走路 / 跑步时暂停打分，不算走神
-    @Published var isAway = false
+    // 离座检测：系统判断你在走路 / 跑步时暂停打分，不算走神。状态机在 engine.away 里，这里是给 UI 的镜像
+    @Published private(set) var isAway = false
     @Published private(set) var awayCount = 0
     @Published private(set) var awaySeconds: TimeInterval = 0
     @Published private(set) var steps = 0
-    /// 刚坐回来时心率还没降下来，这段时间不按心率扣分
-    private let recoverySeconds: TimeInterval = 60
-    private var awayEndedAt: TimeInterval?
 
     private let healthStore = HKHealthStore()
     private let motionManager = CMMotionManager()
@@ -53,9 +34,9 @@ final class FocusSession: NSObject, ObservableObject {
     private var workoutSession: HKWorkoutSession?
     private var builder: HKLiveWorkoutBuilder?
 
-    private var scorer = FocusScorer()
-    private var motionWindow: [Double] = []   // 最近 10 秒的加速度模长
+    private var engine = FocusEngine()
     private let motionHz = 25.0
+    private lazy var motionWindow = RollingMean(capacity: Int(motionHz * 10))   // 最近 10 秒的加速度模长
     private var startDate: Date?
     private var tickTimer: Timer?
     private var pendingLabel: String?
@@ -115,20 +96,18 @@ final class FocusSession: NSObject, ObservableObject {
             try await builder.beginCollection(at: now)
 
             await MainActor.run {
-                self.scorer = FocusScorer()
                 #if targetEnvironment(simulator)
-                self.scorer.calibrationSeconds = 10
+                self.engine = FocusEngine(calibrationSeconds: 10)
+                #else
+                self.engine = FocusEngine(calibrationSeconds: 60)
                 #endif
                 self.samples = []
                 self.heartRate = nil
                 self.score = nil
                 self.elapsed = 0
-                self.motionWindow = []
-                self.isAway = false
-                self.awayCount = 0
-                self.awaySeconds = 0
+                self.motionWindow.reset()
+                self.syncAway()
                 self.steps = 0
-                self.awayEndedAt = nil
                 self.aiJudgment = nil
                 self.aiReview = nil
                 self.aiError = nil
@@ -175,7 +154,7 @@ final class FocusSession: NSObject, ObservableObject {
     func mark(_ label: String) {
         pendingLabel = label
         guard let startDate, !samples.isEmpty else { return }
-        let window = WindowSummary.make(from: Array(samples.suffix(60)), baseline: scorer.baselineHR, sessionStart: startDate)
+        let window = WindowSummary.make(from: Array(samples.suffix(60)), baseline: engine.baselineHR, sessionStart: startDate)
         LabelStore.add(LabeledExample(window: window, label: label))
     }
 
@@ -185,7 +164,7 @@ final class FocusSession: NSObject, ObservableObject {
     private func requestJudgment() {
         guard let startDate else { return }
         let n = Int(AIConfig.judgeInterval)
-        let window = WindowSummary.make(from: Array(samples.suffix(n)), baseline: scorer.baselineHR, sessionStart: startDate)
+        let window = WindowSummary.make(from: Array(samples.suffix(n)), baseline: engine.baselineHR, sessionStart: startDate)
         windows.append(window)
         let recent = judgments
         Task {
@@ -221,16 +200,10 @@ final class FocusSession: NSObject, ObservableObject {
 
     // MARK: - 汇总（结束页用）
 
-    var averageScore: Double? {
-        let s = samples.compactMap(\.score)
-        return s.isEmpty ? nil : s.reduce(0, +) / Double(s.count)
-    }
+    var averageScore: Double? { SessionStats.averageScore(samples) }
 
     /// 分数 ≥ 70 的时间占比
-    var focusedRatio: Double? {
-        let s = samples.compactMap(\.score)
-        return s.isEmpty ? nil : Double(s.filter { $0 >= 70 }.count) / Double(s.count)
-    }
+    var focusedRatio: Double? { SessionStats.focusedRatio(samples) }
 
     // MARK: - 传感器
 
@@ -241,10 +214,6 @@ final class FocusSession: NSObject, ObservableObject {
             guard let self, let a = data?.userAcceleration else { return }
             let mag = (a.x * a.x + a.y * a.y + a.z * a.z).squareRoot()
             self.motionWindow.append(mag)
-            let maxCount = Int(self.motionHz * 10)
-            if self.motionWindow.count > maxCount {
-                self.motionWindow.removeFirst(self.motionWindow.count - maxCount)
-            }
         }
     }
 
@@ -269,13 +238,13 @@ final class FocusSession: NSObject, ObservableObject {
     }
 
     private func setAway(_ away: Bool) {
-        guard away != isAway else { return }
-        isAway = away
-        if away {
-            awayCount += 1
-        } else {
-            awayEndedAt = elapsed
-        }
+        if engine.setAway(away, at: elapsed) { syncAway() }
+    }
+
+    private func syncAway() {
+        isAway = engine.away.isAway
+        awayCount = engine.away.awayCount
+        awaySeconds = engine.away.awaySeconds
     }
 
     private func startTicking() {
@@ -288,29 +257,19 @@ final class FocusSession: NSObject, ObservableObject {
     private func tick() {
         guard let startDate else { return }
         elapsed = Date().timeIntervalSince(startDate)
-        motion = motionWindow.isEmpty ? 0 : motionWindow.reduce(0, +) / Double(motionWindow.count)
+        motion = motionWindow.mean
         #if targetEnvironment(simulator)
         simulateSensors()
         #endif
 
-        if phase == .calibrating {
-            // 走动时的心率不能当「平静基线」
-            if let hr = heartRate, !isAway { scorer.addCalibrationHR(hr) }
-            if elapsed >= scorer.calibrationSeconds, scorer.finishCalibration() {
-                phase = .running
-            }
-        } else if phase == .running {
-            if isAway {
-                awaySeconds += 1   // 离座：不打分，也不计入专注占比
-            } else {
-                let recovering = awayEndedAt.map { elapsed - $0 < recoverySeconds } ?? false
-                score = scorer.score(heartRate: recovering ? nil : heartRate, motion: motion)
-            }
-        }
+        // 校准 / 打分 / 离座计时 / 恢复期都在 FocusEngine.tick 里（见 FlowbeatCore 的单元测试）
+        let result = engine.tick(elapsed: elapsed, heartRate: heartRate, motion: motion)
+        if result.didFinishCalibration { phase = .running }
+        score = engine.score
+        syncAway()
 
-        let scored = phase == .running && !isAway
         samples.append(FocusSample(t: Date(), heartRate: heartRate, motion: motion,
-                                   score: scored ? score : nil, label: pendingLabel, away: isAway))
+                                   score: result.sampleScore, label: pendingLabel, away: isAway))
         pendingLabel = nil
 
         if phase == .running, elapsed - lastJudgeAt >= AIConfig.judgeInterval {
@@ -319,13 +278,13 @@ final class FocusSession: NSObject, ObservableObject {
         }
     }
 
-    var calibrationSeconds: TimeInterval { scorer.calibrationSeconds }
+    var calibrationSeconds: TimeInterval { engine.calibrationSeconds }
 
     #if targetEnvironment(simulator)
     /// 模拟器没有真传感器：校准后按 60 秒循环造假数据——专注 35 秒 → 走神 10 秒 → 起身走路 15 秒。
     /// 真机不会编译这段。
     private func simulateSensors() {
-        let afterCalibration = elapsed - scorer.calibrationSeconds
+        let afterCalibration = elapsed - engine.calibrationSeconds
         let t = afterCalibration > 0 ? afterCalibration.truncatingRemainder(dividingBy: 60) : 0
         switch t {
         case 45...:   // 走路
@@ -356,8 +315,7 @@ final class FocusSession: NSObject, ObservableObject {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let name = ISO8601DateFormatter().string(from: samples[0].t)
             .replacingOccurrences(of: ":", with: "-")
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
+        let encoder = FlowbeatJSON.sessionEncoder
         let record = SessionRecord(samples: samples, windows: windows, judgments: judgments, review: aiReview)
         if let data = try? encoder.encode(record) {
             try? data.write(to: dir.appendingPathComponent("\(name).json"))

@@ -1,0 +1,35 @@
+{
+  "WindowSummary": [
+    "away_seconds",
+    "baseline_hr",
+    "hr_max",
+    "hr_mean",
+    "hr_min",
+    "hr_trend",
+    "local_time",
+    "minute_of_session",
+    "motion_max",
+    "motion_mean",
+    "rule_score_mean",
+    "still_ratio"
+  ],
+  "JudgeRequest": [
+    "examples",
+    "recent",
+    "window"
+  ],
+  "ReviewRequest": [
+    "average_score",
+    "away_count",
+    "away_minutes",
+    "duration_minutes",
+    "focused_ratio",
+    "judgments",
+    "windows"
+  ],
+  "Judgment": [
+    "reason",
+    "score",
+    "state"
+  ]
+}
