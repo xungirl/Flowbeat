@@ -97,6 +97,60 @@ open Flowbeat.xcodeproj
 
 The simulator is fine for UI, but it has no real sensors — use a real watch to see meaningful scores.
 
+## Project Journey
+
+Everything below happened on 2026-11-11 (see `git log`). Each stage links to the section above that holds the details, so they aren't repeated here.
+
+### 1. v0: rule-based focus score on the watch (`13a8f6a`)
+- **Goal:** a live 0–100 focus estimate from signals a watch can read continuously.
+- **Decision:** heart rate (HealthKit) + wrist acceleration (CoreMotion, 25 Hz), scored once per second on-device with transparent rules instead of a model, because there was no labeled data yet. SpO₂ was rejected because third-party apps can't trigger readings, and it doesn't track focus (see [How it works](#how-it-works)).
+- **Built:** `FocusScorer.swift`: a 60 s calibration takes the median HR as your baseline, then a motion penalty (≤ 60) and an elevated-HR penalty (≤ 40), with exponential smoothing. An `HKWorkoutSession` keeps HR flowing in the background and is discarded at the end, so nothing is written to Health. 专注/走神 labels and full sessions are saved as JSON for later tuning.
+
+### 2. Problem: HealthKit permission failed silently (`8a2349b`)
+- **Surprise:** if the user dismisses or denies the HealthKit prompt, `requestAuthorization` does **not** throw, so a workout could start without data.
+- **Fix:** request authorization as soon as the app opens, then re-check `authorizationStatus` before starting a session and show a clear message if it's missing.
+
+### 3. Away detection (`7f8fb90`)
+- **Problem:** walking away from the desk was scored as "distracted", and HR stays high for a while after sitting back down.
+- **Built:** `CMMotionActivityManager` walking/running marks time as **away**. Away time isn't scored, doesn't count against the focus ratio and is excluded from the calibration baseline. There's a 60 s HR-penalty grace period after sitting back down, and the summary shows away count/duration and steps (CMPedometer).
+- **Verified:** in the simulator via a simulated-sensor demo cycle (focus 35 s → distracted 10 s → walking 15 s, `0b91e25`).
+
+### 4. UI redesign and icon (`8969b69`, `a704602`)
+- Gradient score ring with state colors, controls on a second vertical page, haptic + toast on labeling. The icon is generated in code (`tools/make_icon.swift`).
+
+### 5. LLM second opinion via a backend (`c923221`, `df908d3`, `eac7655`)
+- **Goal:** personalize judgments without enough data to train a model.
+- **Decision:** keep the per-second score rule-based and offline. Every 2 minutes, send a **statistics-only window summary** (no raw samples) to a FastAPI backend, along with your last 20 labeled moments as **few-shot examples**. The LLM returns `{state, score, reason}`, plus `/v1/review` at the end of a session. API keys live in a git-ignored `.env` on the backend, never on the watch. If the backend is down, the watch shows a hint and local scoring continues.
+- **Built:** a Claude provider (structured output via Pydantic) and a `FakeProvider` that is selected automatically when no key is set. There's an optional shared-secret header.
+- **Verified:** `backend/tests` has 6 pytest tests on the fake provider (`uv run pytest`).
+- **Note:** the Claude Haiku provider is implemented but the comparison and live runs below were done with Qwen.
+
+### 6. Switch to Qwen, then pick a model by measurement (`4559ae3`, `579afed`, `783fb49`)
+- **Built:** `QwenProvider` via DashScope's OpenAI-compatible API, using JSON mode + Pydantic validation, with `enable_thinking=False` for speed and cost on a simple classification. `LLM_PROVIDER=claude|qwen|fake` picks the provider.
+- **Compared:** `qwen-plus` vs `qwen3.8-flash` vs `qwen3.8-max` on 3 fixed windows (focused, distracted, deliberately ambiguous "tense but still"), with 2 runs. Full table, findings and re-run command are in [Model comparison](#model-comparison); the script is `backend/scripts/compare_models.py`.
+- **Decision:** `qwen3.8-flash` became the default. It gave the same verdicts both runs at the lowest latency (0.7–1.4 s). `qwen-plus` flipped on the ambiguous case between runs, and `qwen3.8-max` was slower and called it "unclear".
+- **Surprise (open issue):** on the clear cases every model's score equaled the `rule_score_mean` sent in the request (92 / 48). The LLM is anchoring on the on-device rule score rather than judging independently.
+- **Measured:** ~1–2 s per judge call live, ~520–760 input / ~20–40 output tokens. Input grows by ~110 tokens per stored label.
+
+### Key metrics
+
+| Metric | Value | How measured | Source |
+|---|---|---|---|
+| Scoring cadence | 1 score/s on-device, 25 Hz motion | timer + `deviceMotionUpdateInterval` | `Flowbeat/FocusSession.swift` |
+| Calibration | 60 s, median resting HR | `calibrationSeconds` | `Flowbeat/FocusScorer.swift` |
+| LLM judge interval | every 120 s (30 s in simulator) | `AIConfig.judgeInterval` | `Flowbeat/AIJudge.swift` |
+| Models compared | 3 Qwen models × 3 cases × 2 runs, 1 call per cell | `compare_models.py` | [Model comparison](#model-comparison) |
+| Chosen model latency | 0.7–1.4 s (`qwen3.8-flash`) | wall clock per call in the script | [Model comparison](#model-comparison) |
+| Tokens per judgment | ~520–760 in / ~20–40 out | API usage on live calls | [Model comparison](#model-comparison) |
+| Backend tests | 6 passing | `uv run pytest` (fake provider) | `backend/tests/` |
+
+Caveat: the comparison is a small smoke test (one call per cell, two runs), not a statistical evaluation, and all results so far are from the simulator with simulated sensors.
+
+### Next steps
+- Run on a real Apple Watch (only the simulator has been used so far) and collect labeled sessions.
+- Fix the anchoring issue: drop `rule_score_mean` from the request and re-run the comparison.
+- Then follow the [Roadmap](#roadmap): iPhone companion, threshold tuning or a personal model, and a Cloud Run backend.
+
 ## Roadmap
 
 - [x] v0: live score on the watch, calibration, labeling, JSON logging
