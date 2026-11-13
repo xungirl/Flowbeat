@@ -124,6 +124,7 @@ extension SessionRecord {
                       judgments: judgments + delivered.map(\.judgment), review: review,
                       timeline: (timeline ?? []) + delivered.map {
                           JudgedWindow(minute: $0.request.window.minuteOfSession, judgment: $0.judgment)
-                      })
+                      },
+                      plan: plan)
     }
 }

@@ -4,12 +4,32 @@
     "%lld": {
       "shouldTranslate": false
     },
+    "%lld / %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld / %2$lld 分钟"
+          }
+        }
+      }
+    },
     "%lld min": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "%lld 分钟"
+          }
+        }
+      }
+    },
+    "%lld of %lld min focused": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注 %1$lld / %2$lld 分钟"
           }
         }
       }
@@ -207,6 +227,26 @@
         }
       }
     },
+    "Break": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "休息"
+          }
+        }
+      }
+    },
+    "Break %lld": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld 次休息"
+          }
+        }
+      }
+    },
     "Calibrating · sit still": {
       "localizations": {
         "zh-Hans": {
@@ -377,6 +417,36 @@
         }
       }
     },
+    "Goal not reached": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标未达成"
+          }
+        }
+      }
+    },
+    "Goal reached": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标达成"
+          }
+        }
+      }
+    },
+    "Goal: %lld min focused": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标：专注 %lld 分钟"
+          }
+        }
+      }
+    },
     "Health data isn't available on this device.": {
       "localizations": {
         "zh-Hans": {
@@ -437,6 +507,16 @@
         }
       }
     },
+    "Longest streak": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最长连续专注"
+          }
+        }
+      }
+    },
     "Marked: Distracted": {
       "localizations": {
         "zh-Hans": {
@@ -453,6 +533,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "已标记：专注"
+          }
+        }
+      }
+    },
+    "Minutes with a focus score of 70 or more.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按专注指数 ≥ 70 的分钟数计算。"
           }
         }
       }
@@ -517,6 +607,16 @@
         }
       }
     },
+    "Off": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
     "Off track": {
       "localizations": {
         "zh-Hans": {
@@ -527,12 +627,42 @@
         }
       }
     },
+    "Pomodoro": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "番茄钟"
+          }
+        }
+      }
+    },
     "Resumes when you sit": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "坐下自动继续"
+          }
+        }
+      }
+    },
+    "Scoring paused": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂停计分"
+          }
+        }
+      }
+    },
+    "Session goal": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本次目标"
           }
         }
       }
@@ -623,6 +753,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "心流占比"
+          }
+        }
+      }
+    },
+    "Work": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作"
+          }
+        }
+      }
+    },
+    "Work %lld": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第 %lld 轮工作"
           }
         }
       }

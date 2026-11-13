@@ -33,6 +33,27 @@ final class FocusSession: NSObject, ObservableObject {
     /// 最近一次提醒在第几秒（运行页据此显示几秒钟的提示条）
     @Published private(set) var lastNudgeAt: TimeInterval?
 
+    // 模式和目标（FlowbeatCore/SessionPlan.swift）。开始时从设置里读一次
+    @Published private(set) var plan = SessionPlan()
+    private var pomodoro: PomodoroTimer?
+    /// 番茄钟当前阶段；自由模式为 nil
+    @Published private(set) var pomodoroPhase: PomodoroTimer.Phase?
+    var isOnBreak: Bool { pomodoroPhase?.kind == .rest }
+    /// 番茄钟当前这一段还剩多少秒 / 已经走了多少（0…1）。UI 每秒随 elapsed 刷新
+    var pomodoroRemaining: TimeInterval? {
+        guard let p = pomodoro else { return nil }
+        return p.current.remaining(at: Date().timeIntervalSince(p.start))
+    }
+    var pomodoroProgress: Double {
+        guard let p = pomodoro, let left = pomodoroRemaining else { return 0 }
+        return 1 - left / (p.current.endsAt - p.current.startsAt)
+    }
+    /// 休息时系统报告的走路 / 静止先记在这里，休息结束再交给离座状态机（休息时走动不算离座）
+    private var activityAwayDuringBreak = false
+    /// 本次专注了多少秒（分数 ≥ 70），目标进度用
+    @Published private(set) var focusedSeconds = 0
+    private var goalAnnounced = false
+
     private let healthStore = HKHealthStore()
     private let motionManager = CMMotionManager()
     private let activityManager = CMMotionActivityManager()
@@ -116,11 +137,12 @@ final class FocusSession: NSObject, ObservableObject {
 
     // MARK: - 开始 / 结束
 
-    func start() async {
+    func start(mode: SessionMode = .free) async {
+        let plan = AppSettings.plan(mode: mode)
         #if targetEnvironment(simulator)
         // 模拟器 -demo：传感器本来就是模拟的，跳过 HealthKit 授权弹窗和 workout，直接开始（方便自动化跑 demo）
         if ProcessInfo.processInfo.arguments.contains("-demo") {
-            await MainActor.run { self.beginSession(at: Date()) }
+            await MainActor.run { self.beginSession(at: Date(), plan: plan) }
             return
         }
         #endif
@@ -142,14 +164,14 @@ final class FocusSession: NSObject, ObservableObject {
             session.startActivity(with: now)
             try await builder.beginCollection(at: now)
 
-            await MainActor.run { self.beginSession(at: now) }
+            await MainActor.run { self.beginSession(at: now, plan: plan) }
         } catch {
             await setError(String(localized: "Couldn't start the session: \(error.localizedDescription)"))
         }
     }
 
     /// 清空上一次的状态，开始校准和计时
-    @MainActor private func beginSession(at now: Date) {
+    @MainActor private func beginSession(at now: Date, plan: SessionPlan) {
         #if targetEnvironment(simulator)
         self.engine = FocusEngine(calibrationSeconds: 10)
         #else
@@ -165,6 +187,12 @@ final class FocusSession: NSObject, ObservableObject {
         self.nudge = DistractionNudge(settings: AppSettings.nudge)
         self.nudgeCount = 0
         self.lastNudgeAt = nil
+        self.plan = plan
+        self.pomodoro = plan.mode == .pomodoro ? PomodoroTimer(start: Self.pomodoroStart(now), settings: plan.pomodoro) : nil
+        self.pomodoroPhase = self.pomodoro?.current
+        self.activityAwayDuringBreak = false
+        self.focusedSeconds = 0
+        self.goalAnnounced = false
         self.aiJudgment = nil
         self.aiReview = nil
         self.aiError = nil
@@ -336,6 +364,22 @@ final class FocusSession: NSObject, ObservableObject {
     /// 分数 ≥ 70 的时间占比
     var focusedRatio: Double? { SessionStats.focusedRatio(samples) }
 
+    var focusedMinutes: Int { focusedSeconds / 60 }
+    var longestStreakSeconds: Int { SessionStats.longestFocusStreak(samples) }
+    var goalResult: GoalResult? { SessionStats.goalResult(samples, goalMinutes: plan.goalMinutes) }
+
+    /// 番茄钟从什么时候开始算。真机 = 专注开始的时刻。
+    /// 模拟器截图：-demoPomodoroOffset <秒> 假装番茄钟已经走了这么久（不用等 25 分钟就能看到休息页）
+    private static func pomodoroStart(_ now: Date) -> Date {
+        #if targetEnvironment(simulator)
+        let args = ProcessInfo.processInfo.arguments
+        if let i = args.firstIndex(of: "-demoPomodoroOffset"), i + 1 < args.count, let s = Double(args[i + 1]) {
+            return now.addingTimeInterval(-s)
+        }
+        #endif
+        return now
+    }
+
     // MARK: - 传感器
 
     private func startMotion() {
@@ -370,7 +414,30 @@ final class FocusSession: NSObject, ObservableObject {
     }
 
     private func setAway(_ away: Bool) {
+        if isOnBreak {
+            activityAwayDuringBreak = away   // 休息时随便走，不算离座
+            return
+        }
         if engine.setAway(away, at: elapsed) { syncAway() }
+    }
+
+    /// 番茄钟阶段推进 + 切换时的震动。返回这一秒是否在休息
+    private func advancePomodoro(now: Date) -> Bool {
+        guard var timer = pomodoro else { return false }
+        let event = timer.update(now: now)
+        pomodoro = timer
+        pomodoroPhase = timer.current
+        switch event {
+        case .breakStarted?:
+            Haptics.breakStarted()
+        case .workStarted?:
+            Haptics.workStarted()
+            // 休息期间最后一次活动识别的结果交给离座状态机（还在走就算离座）
+            if engine.setAway(activityAwayDuringBreak, at: elapsed) { syncAway() }
+        case nil:
+            break
+        }
+        return timer.current.kind == .rest
     }
 
     private func syncAway() {
@@ -388,31 +455,46 @@ final class FocusSession: NSObject, ObservableObject {
     /// 每秒一次：更新动作值、推进校准、算分、记一条样本
     private func tick() {
         guard let startDate else { return }
-        elapsed = Date().timeIntervalSince(startDate)
+        let now = Date()
+        elapsed = now.timeIntervalSince(startDate)
         motion = motionWindow.mean
         #if targetEnvironment(simulator)
         simulateSensors()
         #endif
 
-        // 校准 / 打分 / 离座计时 / 恢复期都在 FocusEngine.tick 里（见 FlowbeatCore 的单元测试）
-        let result = engine.tick(elapsed: elapsed, heartRate: heartRate, motion: motion)
-        if result.didFinishCalibration { phase = .running }
-        score = engine.score
-        syncAway()
+        // 番茄钟休息：不打分（也不推进校准、不计离座），样本照记、标上 onBreak
+        let onBreak = advancePomodoro(now: now)
+        var sampleScore: Double?
+        if !onBreak {
+            // 校准 / 打分 / 离座计时 / 恢复期都在 FocusEngine.tick 里（见 FlowbeatCore 的单元测试）
+            let result = engine.tick(elapsed: elapsed, heartRate: heartRate, motion: motion)
+            if result.didFinishCalibration { phase = .running }
+            score = engine.score
+            sampleScore = result.sampleScore
+            syncAway()
+        }
 
-        let nudgeInput = DistractionNudge.Input(elapsed: elapsed, score: result.sampleScore,
-                                                calibrating: phase == .calibrating, away: isAway)
+        let nudgeInput = DistractionNudge.Input(elapsed: elapsed, score: sampleScore,
+                                                calibrating: phase == .calibrating, away: isAway, onBreak: onBreak)
         if nudge.update(nudgeInput) {
             Haptics.nudge()
             nudgeCount = nudge.nudgeCount
             lastNudgeAt = elapsed
         }
 
-        samples.append(FocusSample(t: Date(), heartRate: heartRate, motion: motion,
-                                   score: result.sampleScore, label: pendingLabel, away: isAway))
+        if let s = sampleScore, s >= SessionStats.focusThreshold {
+            focusedSeconds += 1
+            if let goal = plan.goalMinutes, !goalAnnounced, focusedSeconds >= goal * 60 {
+                goalAnnounced = true
+                Haptics.goalReached()
+            }
+        }
+
+        samples.append(FocusSample(t: now, heartRate: heartRate, motion: motion, score: sampleScore,
+                                   label: pendingLabel, away: isAway, onBreak: onBreak ? true : nil))
         pendingLabel = nil
 
-        if aiEnabled, phase == .running, elapsed - lastJudgeAt >= AppFeatures.judgeInterval {
+        if aiEnabled, phase == .running, !onBreak, elapsed - lastJudgeAt >= AppFeatures.judgeInterval {
             lastJudgeAt = elapsed
             requestJudgment()
         } else {
@@ -469,7 +551,7 @@ final class FocusSession: NSObject, ObservableObject {
         let name = sessionName ?? Self.sessionName(for: samples[0].t)
         let encoder = FlowbeatJSON.sessionEncoder
         let record = SessionRecord(samples: samples, windows: windows, judgments: judgments, review: aiReview,
-                                   timeline: timeline)
+                                   timeline: timeline, plan: plan)
         let url = dir.appendingPathComponent("\(name).json")
         if let data = try? encoder.encode(record), (try? data.write(to: url, options: .atomic)) != nil {
             PhoneSync.shared.send(sessionFile: url)   // 有 iPhone 端就同步过去画时间线

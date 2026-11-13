@@ -9,6 +9,10 @@ enum AppSettings {
         static let nudgeEnabled = "nudge.enabled"
         static let nudgeMinutes = "nudge.distractedMinutes"
         static let nudgeCooldown = "nudge.cooldownMinutes"
+        static let pomodoroWork = "pomodoro.workMinutes"
+        static let pomodoroBreak = "pomodoro.breakMinutes"
+        /// 0 = 不设目标
+        static let sessionGoal = "goal.sessionMinutes"
     }
 
     private static var defaults: UserDefaults { .standard }
@@ -27,6 +31,20 @@ enum AppSettings {
                       distractedMinutes: int(Key.nudgeMinutes, NudgeSettings.defaultDistractedMinutes),
                       cooldownMinutes: int(Key.nudgeCooldown, NudgeSettings.defaultCooldownMinutes))
     }
+
+    static var pomodoro: PomodoroSettings {
+        PomodoroSettings(workMinutes: int(Key.pomodoroWork, PomodoroSettings.defaultWorkMinutes),
+                         breakMinutes: int(Key.pomodoroBreak, PomodoroSettings.defaultBreakMinutes))
+    }
+
+    static var sessionGoalMinutes: Int? {
+        let g = int(Key.sessionGoal, 0)
+        return g > 0 ? g : nil
+    }
+
+    static func plan(mode: SessionMode) -> SessionPlan {
+        SessionPlan(mode: mode, pomodoro: pomodoro, goalMinutes: sessionGoalMinutes)
+    }
 }
 
 /// 所有触感反馈集中在这里，方便统一调整「轻重」
@@ -34,4 +52,10 @@ enum Haptics {
     /// 走神提醒：选最轻的「向上」两下，而不是 .notification（像来消息，太重、会让人以为有通知）
     static func nudge() { WKInterfaceDevice.current().play(.directionUp) }
     static func label() { WKInterfaceDevice.current().play(.click) }
+    /// 番茄钟：工作段结束、进入休息
+    static func breakStarted() { WKInterfaceDevice.current().play(.success) }
+    /// 番茄钟：休息结束、回到工作
+    static func workStarted() { WKInterfaceDevice.current().play(.start) }
+    /// 本次目标达成（只震一次）
+    static func goalReached() { WKInterfaceDevice.current().play(.success) }
 }

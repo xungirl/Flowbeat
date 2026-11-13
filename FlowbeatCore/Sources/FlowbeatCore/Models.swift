@@ -14,14 +14,18 @@ public struct FocusSample: Codable, Equatable, Sendable {
     public let label: String?
     /// 这一秒是否离座（走路 / 跑步），离座时不打分
     public var away: Bool = false
+    /// 番茄钟休息中（不打分）。只在 true 时写进 JSON；旧存档和自由模式没有这个字段
+    public var onBreak: Bool?
 
-    public init(t: Date, heartRate: Double?, motion: Double, score: Double?, label: String?, away: Bool = false) {
+    public init(t: Date, heartRate: Double?, motion: Double, score: Double?, label: String?, away: Bool = false,
+                onBreak: Bool? = nil) {
         self.t = t
         self.heartRate = heartRate
         self.motion = motion
         self.score = score
         self.label = label
         self.away = away
+        self.onBreak = onBreak
     }
 }
 
@@ -33,14 +37,17 @@ public struct SessionRecord: Codable, Equatable, Sendable {
     public let review: Review?
     /// 每个判断属于第几分钟的窗口（离线排队后判断可能晚到，靠这个对齐时间轴）。旧存档没有这个字段。
     public let timeline: [JudgedWindow]?
+    /// 模式（自由 / 番茄钟）和目标。v1 的存档没有这个字段（= 自由模式、没有目标）
+    public let plan: SessionPlan?
 
     public init(samples: [FocusSample], windows: [WindowSummary], judgments: [Judgment], review: Review?,
-                timeline: [JudgedWindow]? = nil) {
+                timeline: [JudgedWindow]? = nil, plan: SessionPlan? = nil) {
         self.samples = samples
         self.windows = windows
         self.judgments = judgments
         self.review = review
         self.timeline = timeline
+        self.plan = plan
     }
 }
 

@@ -6,6 +6,9 @@ struct SettingsView: View {
     @AppStorage(AppSettings.Key.nudgeEnabled) private var nudgeEnabled = true
     @AppStorage(AppSettings.Key.nudgeMinutes) private var nudgeMinutes = NudgeSettings.defaultDistractedMinutes
     @AppStorage(AppSettings.Key.nudgeCooldown) private var nudgeCooldown = NudgeSettings.defaultCooldownMinutes
+    @AppStorage(AppSettings.Key.pomodoroWork) private var pomodoroWork = PomodoroSettings.defaultWorkMinutes
+    @AppStorage(AppSettings.Key.pomodoroBreak) private var pomodoroBreak = PomodoroSettings.defaultBreakMinutes
+    @AppStorage(AppSettings.Key.sessionGoal) private var sessionGoal = 0
 
     var body: some View {
         List {
@@ -21,6 +24,25 @@ struct SettingsView: View {
                 }
             } footer: {
                 Text("A gentle tap on your wrist when you have been distracted for a while. Never while you walk, calibrate or take a break.")
+            }
+
+            Section("Pomodoro") {
+                Stepper(value: $pomodoroWork, in: PomodoroSettings.workMinutesRange, step: 5) {
+                    settingRow("Work", minutes: pomodoroWork)
+                }
+                Stepper(value: $pomodoroBreak, in: PomodoroSettings.breakMinutesRange) {
+                    settingRow("Break", minutes: pomodoroBreak)
+                }
+            }
+
+            Section {
+                Picker("Session goal", selection: $sessionGoal) {
+                    ForEach(SessionPlan.goalChoices, id: \.self) { m in
+                        if m == 0 { Text("Off").tag(m) } else { Text("\(m) min").tag(m) }
+                    }
+                }
+            } footer: {
+                Text("Minutes with a focus score of 70 or more.")
             }
         }
         .navigationTitle("Settings")

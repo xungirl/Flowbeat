@@ -93,6 +93,16 @@ struct StartView: View {
     @EnvironmentObject var permissions: PermissionCenter
     @State private var breathe = false
     @State private var showAbout = false
+    @AppStorage(AppSettings.Key.pomodoroWork) private var pomodoroWork = PomodoroSettings.defaultWorkMinutes
+    @AppStorage(AppSettings.Key.pomodoroBreak) private var pomodoroBreak = PomodoroSettings.defaultBreakMinutes
+    @AppStorage(AppSettings.Key.sessionGoal) private var sessionGoal = 0
+
+    private func start(_ mode: SessionMode) {
+        Task {
+            await session.start(mode: mode)
+            permissions.refresh()
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -119,16 +129,34 @@ struct StartView: View {
             }
 
             Button {
-                Task {
-                    await session.start()
-                    permissions.refresh()
-                }
+                start(.free)
             } label: {
                 Label("Start Focus", systemImage: "play.fill").font(.headline)
             }
             .buttonStyle(.borderedProminent)
             .tint(.mint)
             .disabled(!permissions.readiness.canStart)
+
+            Button {
+                start(.pomodoro)
+            } label: {
+                HStack {
+                    Image(systemName: "timer")
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Pomodoro")
+                        Text("\(pomodoroWork) / \(pomodoroBreak) min").font(.caption2).foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .tint(.indigo)
+            .disabled(!permissions.readiness.canStart)
+
+            if sessionGoal > 0 {
+                Label("Goal: \(sessionGoal) min focused", systemImage: "target")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
 
             PermissionNotices()
 
@@ -157,7 +185,7 @@ struct StartView: View {
         .task {
             let args = ProcessInfo.processInfo.arguments
             guard args.contains("-demo") else { return }
-            await session.start()
+            await session.start(mode: args.contains("-demoPomodoro") ? .pomodoro : .free)
             if let i = args.firstIndex(of: "-demoStopAfter"), i + 1 < args.count, let secs = Double(args[i + 1]) {
                 // 不能直接在 .task 里 sleep：开始后 StartView 就消失了，.task 被取消，sleep 立刻抛错 → 马上 stop。
                 // 用一个不跟视图生命周期绑定的 Task。
@@ -184,15 +212,25 @@ struct RunningView: View {
         .tabViewStyle(.verticalPage)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Text(timeString(session.elapsed))
-                    .font(.system(.body, design: .rounded, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(stateColor)
+                HStack(spacing: 3) {
+                    // 番茄钟：显示这一段还剩多久；自由模式：显示已经过了多久
+                    if let p = session.pomodoroPhase {
+                        Image(systemName: p.kind == .rest ? "cup.and.saucer.fill" : "timer")
+                            .font(.caption)
+                        Text(timeString(session.pomodoroRemaining ?? 0))
+                    } else {
+                        Text(timeString(session.elapsed))
+                    }
+                }
+                .font(.system(.body, design: .rounded, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(stateColor)
             }
         }
     }
 
     private var stateColor: Color {
+        if session.isOnBreak { return .indigo }
         if session.isAway { return .cyan }
         if session.phase == .calibrating { return .white }
         return Theme.color(for: session.score)
@@ -222,15 +260,26 @@ struct MetricsPage: View {
             // AI 那一行只在 AI build（Debug）里出现；上架版没有 AI，也不联网
             if showNudgeBanner {
                 NudgeBanner()
-            } else if session.aiEnabled {
-                AILine()
+            } else if session.pomodoroPhase != nil || session.plan.goalMinutes != nil {
+                PlanLine()
             }
+            if session.aiEnabled && !session.isOnBreak { AILine() }
         }
         .containerBackground(background.gradient.opacity(0.28), for: .tabView)
     }
 
     @ViewBuilder private var ring: some View {
-        if session.isAway {
+        if session.isOnBreak {
+            Ring(progress: session.pomodoroProgress, colors: [.indigo, .purple]) {
+                VStack(spacing: 2) {
+                    Image(systemName: "cup.and.saucer.fill")
+                        .font(.system(size: 26))
+                        .foregroundStyle(.indigo)
+                    Text("Break").font(.system(.footnote, weight: .semibold))
+                    Text("Scoring paused").font(.system(size: 9)).foregroundStyle(.secondary)
+                }
+            }
+        } else if session.isAway {
             Ring(progress: 1, colors: [.cyan, .blue]) {
                 VStack(spacing: 2) {
                     Image(systemName: "figure.walk")
@@ -279,6 +328,7 @@ struct MetricsPage: View {
     }
 
     private var background: Color {
+        if session.isOnBreak { return .indigo }
         if session.isAway { return .cyan }
         if session.phase == .calibrating { return .gray }
         return Theme.color(for: session.score)
@@ -321,6 +371,34 @@ struct AILine: View {
         case "away": return .cyan
         default: return .secondary
         }
+    }
+}
+
+/// 番茄钟第几轮 + 目标进度，一行
+struct PlanLine: View {
+    @EnvironmentObject var session: FocusSession
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let p = session.pomodoroPhase {
+                Text(p.kind == .rest ? "Break \(p.cycle)" : "Work \(p.cycle)")
+                    .foregroundStyle(p.kind == .rest ? .indigo : .primary)
+            }
+            if let goal = session.plan.goalMinutes {
+                let done = session.focusedMinutes >= goal
+                Label {
+                    Text(verbatim: "\(min(session.focusedMinutes, goal))/\(goal)")
+                } icon: {
+                    Image(systemName: done ? "checkmark.circle.fill" : "target")
+                }
+                .foregroundStyle(done ? .mint : .secondary)
+            }
+        }
+        .font(.system(size: 11, weight: .medium, design: .rounded))
+        .monospacedDigit()
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(.white.opacity(0.08), in: Capsule())
     }
 }
 
@@ -439,6 +517,8 @@ struct SummaryView: View {
                     stat("clock.fill", .white, "Duration", Text(verbatim: timeString(session.elapsed)))
                     stat("sparkles", .mint, "Time in flow",
                          Text(verbatim: session.focusedRatio.map { "\(Int($0 * 100))%" } ?? "--"))
+                    stat("brain.head.profile", .mint, "Focused", Text("\(session.focusedMinutes) min"))
+                    stat("flame.fill", .orange, "Longest streak", Text(verbatim: timeString(TimeInterval(session.longestStreakSeconds))))
                     stat("figure.walk", .cyan, "Away", Text("\(session.awayCount)× · \(timeString(session.awaySeconds))"))
                     stat("shoeprints.fill", .orange, "Steps", Text(verbatim: "\(session.steps)"))
                     if session.nudgeCount > 0 {
@@ -446,6 +526,8 @@ struct SummaryView: View {
                     }
                 }
                 .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+
+                if let goal = session.goalResult { goalCard(goal) }
 
                 aiReviewCard
 
@@ -456,6 +538,28 @@ struct SummaryView: View {
         }
         .navigationTitle("Summary")
         .containerBackground(Theme.color(for: session.averageScore).gradient.opacity(0.22), for: .navigation)
+    }
+
+    private func goalCard(_ g: GoalResult) -> some View {
+        HStack(spacing: 8) {
+            Ring(progress: g.progress, colors: g.met ? Theme.flow : [.yellow, .orange], lineWidth: 5) {
+                Image(systemName: g.met ? "checkmark" : "target")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(g.met ? .mint : .yellow)
+            }
+            .frame(width: 34, height: 34)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(g.met ? "Goal reached" : "Goal not reached")
+                    .font(.system(.footnote, weight: .semibold))
+                Text("\(g.focusedMinutes) of \(g.goalMinutes) min focused")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
     }
 
     @ViewBuilder private var aiReviewCard: some View {
