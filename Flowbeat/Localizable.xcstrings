@@ -917,6 +917,16 @@
         }
       }
     },
+    "Preview inside the app": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 app 内预览"
+          }
+        }
+      }
+    },
     "Resumes when you sit": {
       "localizations": {
         "zh-Hans": {

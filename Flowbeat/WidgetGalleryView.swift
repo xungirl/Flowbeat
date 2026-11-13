@@ -15,7 +15,11 @@ struct WidgetGalleryView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 10) {
-                Text("Watch face widgets").font(.system(.footnote, weight: .semibold)).foregroundStyle(.secondary)
+                VStack(spacing: 0) {
+                    Text("Watch face widgets").font(.system(.footnote, weight: .semibold))
+                    Text("Preview inside the app").font(.system(size: 10))
+                }
+                .foregroundStyle(.secondary)
                 HStack(spacing: 14) {
                     FocusWidgetView(entry: entry, family: .accessoryCircular)
                         .frame(width: 50, height: 50)

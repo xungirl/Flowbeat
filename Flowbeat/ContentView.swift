@@ -550,6 +550,7 @@ struct SummaryView: View {
     @EnvironmentObject var session: FocusSession
 
     var body: some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(spacing: 10) {
                 Ring(progress: (session.averageScore ?? 0) / 100,
@@ -562,6 +563,9 @@ struct SummaryView: View {
                     }
                 }
                 .frame(width: 96, height: 96)
+
+                // 目标结果放在最前面：这是这次专注的「标题」
+                if let goal = session.goalResult { goalCard(goal).id("goal") }
 
                 VStack(spacing: 0) {
                     stat("clock.fill", .white, "Duration", Text(verbatim: timeString(session.elapsed)))
@@ -577,8 +581,6 @@ struct SummaryView: View {
                 }
                 .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
 
-                if let goal = session.goalResult { goalCard(goal) }
-
                 aiReviewCard
 
                 Button("Done") { session.reset() }
@@ -586,7 +588,13 @@ struct SummaryView: View {
                     .tint(.mint)
             }
         }
-        .defaultScrollAnchor(StartView.argument("-scrollBottom") ? .bottom : .top)
+        // 模拟器截图：-scrollToGoal 把目标卡片滚到顶部（下面接着专注分钟数和最长连续）
+        .task {
+            guard StartView.argument("-scrollToGoal") else { return }
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            proxy.scrollTo("goal", anchor: .top)
+        }
+        }
         .navigationTitle("Summary")
         .containerBackground(Theme.color(for: session.averageScore).gradient.opacity(0.22), for: .navigation)
     }
