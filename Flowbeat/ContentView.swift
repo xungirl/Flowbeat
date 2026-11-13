@@ -352,6 +352,14 @@ struct MetricsPage: View {
                         .contentTransition(.numericText())
                         .animation(.default, value: session.score.map(Int.init))
                     Text(stateText).font(.system(size: 10, weight: .medium)).foregroundStyle(.secondary)
+                    if session.personalized {
+                        // 分数里混进了用你的标签训练的模型
+                        Label("Personalized", systemImage: "person.fill.checkmark")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.mint)
+                            .labelStyle(.titleAndIcon)
+                            .padding(.top, 1)
+                    }
                 }
             }
         }

@@ -57,6 +57,13 @@ final class FocusSession: NSObject, ObservableObject {
     @Published private(set) var focusedSeconds = 0
     private var goalAnnounced = false
 
+    // 个性化：用你打的「专注 / 走神」标签在手表上训练的逻辑回归（FlowbeatCore/PersonalModel.swift）。
+    // 两类标签都够 8 个才启用；启用时显示的分数 = 规则分和模型概率各占一半。
+    @Published private(set) var personalModel: PersonalModel?
+    var personalized: Bool { personalModel != nil }
+    /// 这次专注里新打的标签（以前的标签在存档摘要里）
+    private var sessionLabels: [LabeledFeatures] = []
+
     private let healthStore = HKHealthStore()
     private let motionManager = CMMotionManager()
     private let activityManager = CMMotionActivityManager()
@@ -196,6 +203,8 @@ final class FocusSession: NSObject, ObservableObject {
         self.activityAwayDuringBreak = false
         self.focusedSeconds = 0
         self.goalAnnounced = false
+        self.sessionLabels = []
+        self.retrainPersonalModel()
         self.aiJudgment = nil
         self.aiReview = nil
         self.aiError = nil
@@ -272,6 +281,12 @@ final class FocusSession: NSObject, ObservableObject {
     /// 手动打标签：下一秒的记录会带上它（存进本次的 JSON）；AI build 里还把最近 1 分钟存成你的 few-shot 例子
     func mark(_ label: String) {
         pendingLabel = label
+        // 个性化模型：这个标签马上加进训练集，标签够了这次专注里就能启用
+        if let f = FocusFeatures.make(from: samples.suffix(FocusFeatures.windowSeconds), baseline: engine.baselineHR,
+                                      hrvMs: latestHRV) {
+            sessionLabels.append(LabeledFeatures(features: f, focused: label == "focused"))
+            MainActor.assumeIsolated { retrainPersonalModel() }   // mark 只会从按钮 / 主线程的计时器调用
+        }
         #if FLOWBEAT_AI
         guard aiEnabled, let startDate, !samples.isEmpty else { return }
         let window = WindowSummary.make(from: Array(samples.suffix(60)), baseline: engine.baselineHR,
@@ -368,6 +383,21 @@ final class FocusSession: NSObject, ObservableObject {
     var focusedRatio: Double? { SessionStats.focusedRatio(samples) }
 
     var focusedMinutes: Int { focusedSeconds / 60 }
+
+    /// 用以前所有存档里的标签 + 这次的标签重新训练（几百个样本 × 400 次迭代，毫秒级）。标签不够时 personalModel = nil
+    @MainActor private func retrainPersonalModel() {
+        guard AppSettings.personalizationEnabled else {
+            personalModel = nil
+            return
+        }
+        personalModel = PersonalModel.train(HistoryStore.shared.digests.allLabels + sessionLabels)
+    }
+
+    /// 最近一次 HRV 读数（只有 AI build 会读 HRV；上架版这里永远是 nil，模型里 HRV 那一列不起作用）
+    private var latestHRV: Double? {
+        guard let end = samples.last?.t else { return nil }
+        return HRVSummary.latest(from: hrvSamples, at: end)?.sdnnMs
+    }
     var longestStreakSeconds: Int { SessionStats.longestFocusStreak(samples) }
     var goalResult: GoalResult? { SessionStats.goalResult(samples, goalMinutes: plan.goalMinutes) }
 
@@ -474,6 +504,13 @@ final class FocusSession: NSObject, ObservableObject {
             if result.didFinishCalibration { phase = .running }
             score = engine.score
             sampleScore = result.sampleScore
+            // 个性化启用时：规则分和模型概率混合（离座 / 校准时 sampleScore 是 nil，不混）
+            if let model = personalModel, let rule = sampleScore {
+                let f = FocusFeatures.make(from: samples.suffix(FocusFeatures.windowSeconds), baseline: engine.baselineHR,
+                                           hrvMs: latestHRV)
+                sampleScore = model.blendedScore(rule: rule, features: f)
+                score = sampleScore
+            }
             syncAway()
         }
 

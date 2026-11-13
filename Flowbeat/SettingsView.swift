@@ -10,6 +10,8 @@ struct SettingsView: View {
     @AppStorage(AppSettings.Key.pomodoroBreak) private var pomodoroBreak = PomodoroSettings.defaultBreakMinutes
     @AppStorage(AppSettings.Key.sessionGoal) private var sessionGoal = 0
     @AppStorage(HistoryStore.dailyGoalKey) private var dailyGoal = FocusHistory.defaultDailyGoalMinutes
+    @AppStorage(AppSettings.Key.personalization) private var personalization = true
+    @ObservedObject private var history = HistoryStore.shared
 
     var body: some View {
         List {
@@ -48,9 +50,51 @@ struct SettingsView: View {
             } footer: {
                 Text("Minutes with a focus score of 70 or more. The daily goal sets your streak.")
             }
+
+            personalizationSection
         }
         .navigationTitle("Settings")
         .onChange(of: dailyGoal) { _, _ in HistoryStore.shared.refresh() }
+        .onAppear { history.refresh() }
+    }
+
+    /// 个性化打分：开关 + 现在的状态（标签够不够、模型最看重什么）
+    @ViewBuilder private var personalizationSection: some View {
+        let labels = history.digests.allLabels
+        let model = PersonalModel.train(labels)
+        Section {
+            Toggle("Personalized scoring", isOn: $personalization)
+            if personalization {
+                if let model {
+                    Text("Active · \(model.focusedCount) focused / \(model.distractedCount) distracted labels")
+                        .font(.caption2)
+                    ForEach(model.explanation.filter { $0.weight != 0 }.prefix(3), id: \.name) { item in
+                        HStack(spacing: 4) {
+                            Image(systemName: item.weight > 0 ? "arrow.up.circle.fill" : "arrow.down.circle.fill")
+                                .foregroundStyle(item.weight > 0 ? .mint : .orange)
+                            Text(Self.featureTitle(item.name))
+                        }
+                        .font(.caption2)
+                    }
+                } else {
+                    let missing = PersonalModel.missingLabels(labels)
+                    Text("Needs \(PersonalModel.minLabelsPerClass) labels of each kind. Still missing: \(missing.focused) focused, \(missing.distracted) distracted.")
+                        .font(.caption2)
+                }
+            }
+        } footer: {
+            Text("Trained on this watch from your Focused / Distracted taps, then blended 50/50 with the built-in score. Nothing leaves the watch. Not validated on real users.")
+        }
+    }
+
+    /// 特征名 → 给人看的说明（↑ = 让「专注」更可能）
+    static func featureTitle(_ name: String) -> LocalizedStringKey {
+        switch name {
+        case "stillRatio": return "Wrist stillness"
+        case "motionMean": return "Wrist motion"
+        case "hrDelta": return "Heart rate above baseline"
+        default: return "Heart rate variability"
+        }
     }
 
     private func settingRow(_ title: LocalizedStringKey, minutes: Int) -> some View {

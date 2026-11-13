@@ -207,6 +207,16 @@
         }
       }
     },
+    "Active · %lld focused / %lld distracted labels": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已启用 · %1$lld 个「专注」/ %2$lld 个「走神」标签"
+          }
+        }
+      }
+    },
     "After": {
       "localizations": {
         "zh-Hans": {
@@ -617,12 +627,32 @@
         }
       }
     },
+    "Heart rate above baseline": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "心率高于基线"
+          }
+        }
+      }
+    },
     "Heart rate is off, so Flowbeat can't estimate focus. Turn it on in the Health app on your iPhone (Sharing → Apps → Flowbeat) or in Settings → Health on your watch.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "心率权限已关闭，心流无法估计专注。请在 iPhone 的「健康」App（共享 → App → 心流）或手表的「设置 → 健康」里打开。"
+          }
+        }
+      }
+    },
+    "Heart rate variability": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "心率变异性"
           }
         }
       }
@@ -757,6 +787,16 @@
         }
       }
     },
+    "Needs %lld labels of each kind. Still missing: %lld focused, %lld distracted.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "两种标签各需要 %1$lld 个。还差「专注」%2$lld 个、「走神」%3$lld 个。"
+          }
+        }
+      }
+    },
     "Needs 10+ scored minutes in one hour": {
       "localizations": {
         "zh-Hans": {
@@ -833,6 +873,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "走神了"
+          }
+        }
+      }
+    },
+    "Personalized": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "个性化"
+          }
+        }
+      }
+    },
+    "Personalized scoring": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "个性化打分"
           }
         }
       }
@@ -1067,6 +1127,16 @@
         }
       }
     },
+    "Trained on this watch from your Focused / Distracted taps, then blended 50/50 with the built-in score. Nothing leaves the watch. Not validated on real users.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用你点的「专注 / 走神」标签在手表上训练，再和内置分数各占一半混合。数据不离开手表。尚未在真实用户上验证。"
+          }
+        }
+      }
+    },
     "Watch face widgets": {
       "localizations": {
         "zh-Hans": {
@@ -1093,6 +1163,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "第 %lld 轮工作"
+          }
+        }
+      }
+    },
+    "Wrist motion": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手腕动作"
+          }
+        }
+      }
+    },
+    "Wrist stillness": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手腕静止"
           }
         }
       }

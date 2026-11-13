@@ -29,11 +29,14 @@ public struct SessionDigest: Codable, Equatable, Sendable {
     public let name: String
     public let start: Date
     public let buckets: [MinuteBucket]
+    /// 这次打的标签对应的特征（个性化模型的训练数据，见 PersonalModel.swift）。v1.0 的缓存没有这个字段
+    public var labels: [LabeledFeatures]?
 
-    public init(name: String, start: Date, buckets: [MinuteBucket]) {
+    public init(name: String, start: Date, buckets: [MinuteBucket], labels: [LabeledFeatures]? = nil) {
         self.name = name
         self.start = start
         self.buckets = buckets
+        self.labels = labels
     }
 
     public static func make(name: String, record: SessionRecord,
@@ -49,8 +52,14 @@ public struct SessionDigest: Codable, Equatable, Sendable {
             byMinute[minute] = b
         }
         return SessionDigest(name: name, start: record.samples.first?.t ?? .distantPast,
-                             buckets: byMinute.keys.sorted().map { byMinute[$0]! })
+                             buckets: byMinute.keys.sorted().map { byMinute[$0]! },
+                             labels: LabeledFeatures.extract(from: record))
     }
+}
+
+extension Array where Element == SessionDigest {
+    /// 所有存档里的标签训练样本（按时间顺序）
+    public var allLabels: [LabeledFeatures] { flatMap { $0.labels ?? [] } }
 }
 
 public struct DayTotal: Equatable, Sendable, Identifiable {
@@ -182,7 +191,8 @@ public struct DigestStore {
         let names = Set(files.filter { $0.pathExtension == "json" }.map { $0.deletingPathExtension().lastPathComponent })
         var cached = Dictionary(load().map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
         var changed = false
-        for name in names where cached[name] == nil {
+        // 没有 labels 字段的旧缓存重新解析一次，拿到标签特征
+        for name in names where cached[name] == nil || cached[name]?.labels == nil {
             let url = archiveDirectory.appendingPathComponent("\(name).json")
             guard let data = try? Data(contentsOf: url),
                   let record = try? FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data) else { continue }

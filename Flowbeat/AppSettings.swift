@@ -13,6 +13,7 @@ enum AppSettings {
         static let pomodoroBreak = "pomodoro.breakMinutes"
         /// 0 = 不设目标
         static let sessionGoal = "goal.sessionMinutes"
+        static let personalization = "personal.enabled"
     }
 
     private static var defaults: UserDefaults { .standard }
@@ -41,6 +42,9 @@ enum AppSettings {
         let g = int(Key.sessionGoal, 0)
         return g > 0 ? g : nil
     }
+
+    /// 个性化打分开关（默认开；标签不够时本来就不会启用）
+    static var personalizationEnabled: Bool { bool(Key.personalization, true) }
 
     static func plan(mode: SessionMode) -> SessionPlan {
         SessionPlan(mode: mode, pomodoro: pomodoro, goalMinutes: sessionGoalMinutes)
