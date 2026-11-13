@@ -93,6 +93,7 @@ class QwenProvider:
             max_retries=2,
         )
         self.model = model or os.getenv("QWEN_MODEL", "qwen3.8-flash")
+        self.last_usage: tuple[int, int] | None = None  # (input, output) tokens of the last call
 
     async def _json(self, system: str, user: str, schema):
         # 千问的 JSON 模式只保证「是 JSON」，所以在提示词里写明字段，再用 Pydantic 校验
@@ -117,6 +118,7 @@ class QwenProvider:
             raise ProviderError("连不上千问", 504) from e
 
         u = resp.usage
+        self.last_usage = (u.prompt_tokens, u.completion_tokens) if u else None
         log.info("qwen %s in=%s out=%s", self.model, u.prompt_tokens if u else "?", u.completion_tokens if u else "?")
         try:
             return schema.model_validate_json(resp.choices[0].message.content or "")
