@@ -23,12 +23,26 @@ HOW TO DEMO (about 3 minutes)
 2. On the start screen, tap "Start Focus". The ring shows a 60-second calibration countdown; sit still while it learns the resting heart rate.
 3. After calibration the ring shows the focus estimate. Keep the wrist still for a high score, or move the hand around for a lower one. Lowering the wrist keeps the session running.
 4. Scroll down (Digital Crown) to the second page. Tap "Focused" or "Distracted" to label the moment, then tap "End".
-5. The summary shows average focus, time in flow, time away and steps. Tap "Done".
+5. The summary shows average focus, time in flow, focused minutes, longest focus streak, time away and steps. Tap "Done".
 6. The (i) button on the start screen reopens the "About" / not-a-medical-device screens.
+7. Optional features (all on-device):
+   - "Pomodoro" on the start screen: 25/5 work/break blocks with a haptic at each switch; scoring pauses during breaks. Lengths and an optional focused-minutes goal are in Settings (gear icon).
+   - Distraction nudge (on by default, Settings): after 3 minutes of a low score the watch plays one light haptic, at most once every 10 minutes, never while walking, calibrating or on a break.
+   - "History" on the start screen: today, last 7 days, daily-goal streak, best time of day.
+   - Watch face: add the "Focus today" complication (Flowbeat) to see today's focused minutes; tapping it opens the app.
+   - Siri / Shortcuts: "Start focus in Flowbeat", "Start a Pomodoro in Flowbeat", "Stop focus in Flowbeat".
 If Health access is declined in step 1, the start screen explains how to turn it on and offers "Check again"; the app does not crash or dead-end.
 
 Contact: [contact email]
 ```
+
+## Capabilities added after the first draft (2026-11-13)
+
+- **App Group `group.com.xungirl.flowbeat`** (watch app + widget extension): one JSON file the complication reads (today's focused minutes, daily goal). Same device, no network. Must be registered under the Team ID before archiving (see the checklist).
+- **WidgetKit extension** (`com.xungirl.flowbeat.watchkitapp.widgets`): accessory complications / Smart Stack. Static timeline (now + next midnight), reloaded by the app when a session ends.
+- **App Intents / App Shortcuts:** no SiriKit entitlement is needed for App Shortcuts. The start intents open the app because the workout session must start in the foreground; Stop runs in the background while a session is active.
+- **Not used:** `StartWorkoutIntent` (the Ultra Action button's workout slot). Flowbeat isn't a workout app, so it doesn't claim that slot; Ultra users can still bind the "Start Focus" shortcut via Settings → Action Button → Shortcut.
+- **Haptics:** `WKInterfaceDevice.play` only while a session is in the foreground or running as a workout session; no notifications are used.
 
 ## Why each point is there (for us, not for Review)
 
@@ -43,3 +57,6 @@ Contact: [contact email]
 - The workout really is absent from the Fitness and Health apps after "End". The code calls `discardWorkout()`, but this has only run in the simulator. Heart-rate samples that the watch measures during the session may still show up in Health under "Apple Watch", as for any workout; check what appears and adjust the wording if needed.
 - The exact Settings path for re-enabling Health access on watchOS and in the iPhone Health app. The in-app text says *Health app on iPhone → Sharing → Apps → Flowbeat* or *Settings → Health on the watch*.
 - The session keeps running with the wrist lowered for 30+ minutes.
+- The nudge and Pomodoro haptics are felt with the wrist lowered (background workout session) and are gentle enough.
+- The complication appears in the watch face editor, shows today's minutes after a session and resets after midnight.
+- "Start focus in Flowbeat" works with Siri on the watch in English and Chinese (「在心流开始专注」).

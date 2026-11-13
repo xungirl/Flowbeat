@@ -4,7 +4,7 @@
 #   scripts/appstore_screenshots.sh            # all watch simulators listed in MODELS
 #
 # Uses demo mode (simulated sensors, simulator-only launch args), so the numbers on screen are
-# not real measurements. The clock in the corner is the real time: `simctl status_bar override`
+# not real measurements. History and widget shots use a fixed sample week (-demoHistory). The clock in the corner is the real time: `simctl status_bar override`
 # has no effect on watchOS simulators (tried on watchOS 11.4). Output: docs/appstore/screenshots/<model>/<lang>-<n>-<name>.png
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -58,6 +58,15 @@ for model in "${MODELS[@]}"; do
     shot 3-onboarding 4 -onboardingPage 0
     shot 4-disclaimer 4 -onboardingPage 1
     shot 5-ondevice   4 -onboardingPage 2
+    # v1 additions. Pomodoro: pretend the timer started 25:00 − 20 s ago, so the break begins 20 s in
+    shot 6-pomodoro  30 -demo -demoPomodoro -demoPomodoroOffset 1480
+    # summary scrolled to the goal card; -goal.sessionMinutes sets the UserDefaults key via the argument domain
+    shot 7-goal     108 -demo -demoStopAfter 100 -goal.sessionMinutes 1 -scrollToGoal
+    # history from a fixed sample week (-demoHistory, in memory only), top and bottom
+    shot 8-history    5 -demoHistory -openHistory
+    shot 9-history-best 6 -demoHistory -openHistory -scrollBottom
+    # widget views rendered inside the app (not a real watch face)
+    shot 10-widgets   5 -demoHistory -widgetGallery
   done
 done
 

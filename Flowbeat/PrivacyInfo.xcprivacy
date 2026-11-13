@@ -5,9 +5,16 @@
   - No tracking, no tracking domains.
   - No collected data: heart rate, motion and session files never leave the device
     (Release builds contain no networking code; see scripts/verify_release_offline.sh).
-  - Required-reason APIs actually used (grep of Flowbeat/ and FlowbeatCore/Sources):
-      UserDefaults → CA92.1 (onboarding-completed flag; AI label store in Debug builds only).
+  - Required-reason APIs actually used (grep of Flowbeat/, FlowbeatWidgets/ and FlowbeatCore/Sources):
+      UserDefaults → CA92.1 (UserDefaults.standard only: onboarding-completed flag, settings for the
+      distraction nudge, Pomodoro lengths, session/daily goals and personalized scoring; AI label
+      store in Debug builds only).
     Not used: file timestamp APIs, system boot time, disk space, active keyboards.
+    The App Group (group.com.xungirl.flowbeat) is used only for one plain JSON file that the
+    widget extension on the same watch reads (widget-snapshot.json); no UserDefaults suite, so
+    reason 1C8F.1 is not needed. The widget has its own manifest (FlowbeatWidgets/PrivacyInfo.xcprivacy).
+  - Session history, the per-minute history cache and the personalized model are computed and
+    stored on the watch only; nothing is transmitted.
   If the AI judge is ever shipped, window summaries derived from heart rate are sent to a
   backend and a third-party LLM: NSPrivacyCollectedDataTypes must then declare Health
   (and probably Fitness) data, linked = false, tracking = false, purpose App Functionality.

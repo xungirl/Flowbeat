@@ -10,9 +10,31 @@
 
 **v1 (App Store) is prepared but not submitted:** a watch-only app that runs fully on-device with no network. The AI judge below is compiled only into Debug builds. Signing, real-device testing and submission are waiting for the Apple Developer account. See [v1 release plan](#v1-release-plan).
 
+## Features
+
+What the v1 (Release, on-device) build does. Everything here runs on the watch; none of it needs a network.
+
+- **Live focus score (0–100)** from heart rate and wrist motion, after a 60 s calibration of your resting heart rate.
+- **Away detection:** walking pauses scoring instead of counting as distraction; steps and time away on the summary.
+- **Labels:** tap 专注 / 走神 (Focused / Distracted) to note how you feel. On watchOS 11, double tap marks "Focused".
+- **Gentle haptic nudge** *(new)*: after 3 min of a low score (configurable), one light tap; at most once every 10 min (configurable); never while walking, calibrating or on a break.
+- **Free run or Pomodoro** *(new)*: 25/5 by default (configurable), haptics at each switch, scoring paused during breaks. Optional **session goal** in focused minutes.
+- **Summary** *(extended)*: average focus, time in flow, focused minutes, longest focus streak, goal result, time away, steps, nudges.
+- **History on the watch** *(new)*: today's focused minutes vs. a daily goal, last 7 days (Swift Charts), daily-goal streak, best time of day.
+- **Complications / Smart Stack** *(new)*: today's minutes and goal progress (circular, rectangular, inline, corner), via WidgetKit + an App Group.
+- **Siri, Shortcuts, Action button** *(new)*: "Start focus", "Start a Pomodoro", "Stop focus" as App Shortcuts (EN + 中文 phrases).
+- **Personalized scoring** *(new)*: once you have ≥ 8 labels of each kind, a logistic regression trained on the watch from your labels is blended 50/50 with the rule score; "Personalized" shows in the ring. **Not validated on real users** (see [stage 23](#23-on-device-personalization-from-labels-a420e87)).
+- **First-launch disclaimer, permission handling, EN + 中文.**
+
+Debug builds add the LLM judge (below). Everything new has only run in the watchOS simulator.
+
+<p><img src="docs/appstore/screenshots/AppleWatchSeries1046mm/en-6-pomodoro.png" width="150" alt="Pomodoro break"> <img src="docs/appstore/screenshots/AppleWatchSeries1046mm/en-7-goal.png" width="150" alt="Summary with goal"> <img src="docs/appstore/screenshots/AppleWatchSeries1046mm/zh-Hans-8-history.png" width="150" alt="History (中文)"> <img src="docs/appstore/screenshots/AppleWatchSeries1046mm/en-9-history-best.png" width="150" alt="7-day chart and best time"> <img src="docs/appstore/screenshots/AppleWatchSeries1046mm/en-10-widgets.png" width="150" alt="Widget views rendered in the app"></p>
+
+*Watch simulator, Release build, demo mode: simulated sensors and a fixed sample week, so the numbers aren't measurements. The last image renders the widget views inside the app, not on a real watch face.*
+
 ## v1 release plan
 
-**Product decision: watch-first, fully on-device, no network.** The shipped app is the rule-based score, away detection, labels and the summary. It has no backend, no LLM, no account and no tracking.
+**Product decision: watch-first, fully on-device, no network.** The shipped app is the rule-based score, away detection, labels and the summary, plus the on-device features added on 2026-11-13 (nudge, Pomodoro + goals, history, complications, App Intents, personalized scoring). It has no backend, no LLM, no account and no tracking.
 
 | | Debug (`FLOWBEAT_AI`) | Release (App Store v1) |
 |---|---|---|
@@ -22,7 +44,7 @@
 | Offline queue persisted to disk | yes | not present (no queue without AI) |
 | Onboarding page 3 | "Developer build: AI judge is on" | "Stays on your watch" |
 
-**Feature flag.** `project.yml` sets the Swift compilation condition `FLOWBEAT_AI` only in the watch targets' Debug configuration. There's a second, runtime gate: the network client can only be built through `FeatureFlags.judgeTransport(_:)` (FlowbeatCore), which never calls its factory when the flag is off. Unit tests check that gate. `scripts/verify_release_offline.sh` checks the result at the binary level: it builds Debug and Release, then requires that the Release binary contains **none** of 6 backend markers (`localhost:8765`, `/v1/judge`, `/v1/review`, `HTTPJudgeTransport`, `AIConfig`, `labeledExamples`) and that the Debug binary contains **all** of them, so the scan is known to work. It scans every Mach-O in the bundle, because Debug builds put the code in `Flowbeat.debug.dylib`. Local result: Debug 6/6, Release 0/6. CI runs it on every push.
+**Feature flag.** `project.yml` sets the Swift compilation condition `FLOWBEAT_AI` only in the watch targets' Debug configuration. There's a second, runtime gate: the network client can only be built through `FeatureFlags.judgeTransport(_:)` (FlowbeatCore), which never calls its factory when the flag is off. Unit tests check that gate. `scripts/verify_release_offline.sh` checks the result at the binary level: it builds Debug and Release, then requires that the Release binary contains **none** of 6 backend markers (`localhost:8765`, `/v1/judge`, `/v1/review`, `HTTPJudgeTransport`, `AIConfig`, `labeledExamples`) and that the Debug binary contains **all** of them, so the scan is known to work. It scans every Mach-O in the bundle, because Debug builds put the code in `Flowbeat.debug.dylib`, and since stage 21 also the widget extension's binary (`PlugIns/FlowbeatWidgets.appex`): 6 Mach-O files in Debug, 2 in Release. Local result: Debug 6/6, Release 0/6. CI runs it on every push.
 
 **Watch-only vs. iPhone companion.** Recommendation: **ship the watch app alone in v1** and add the iPhone app in v1.1 once WatchConnectivity has worked on a real pair. Reasons:
 - The iPhone app only lists sessions synced from the watch, which is a guideline 4.2 (minimum functionality) risk.
@@ -50,7 +72,8 @@ scripts/appstore_screenshots.sh            # EN + 中文 screenshots of the Rele
 **Release-readiness work in the app:**
 - English is the development language, with Simplified Chinese translations: String Catalogs for the watch and iPhone apps, `.strings` in the `FlowbeatPhoneUI` package, `InfoPlist.strings` for the app name and permission texts.
 - A first-launch disclaimer (what it estimates / not a medical device / data stays on the watch). It asks for permissions only after the explanation, handles denial without dead ends, and can be reopened from an About button.
-- `PrivacyInfo.xcprivacy` declares no tracking, no collected data and `UserDefaults` (CA92.1) as the only required-reason API.
+- `PrivacyInfo.xcprivacy` declares no tracking, no collected data and `UserDefaults` (CA92.1) as the only required-reason API. The widget extension has its own manifest with no required-reason APIs: the App Group is used through one plain JSON file, not a `UserDefaults` suite (which would need reason 1C8F.1).
+- App Group `group.com.xungirl.flowbeat` (watch app + widget). **It must be registered under the Team ID** once the account exists (checklist step 2).
 - `WKBackgroundModes: workout-processing` and the HealthKit entitlement are kept for the `HKWorkoutSession`.
 
 **App Store package** in [`docs/appstore/`](docs/appstore/):
@@ -84,7 +107,8 @@ scripts/appstore_screenshots.sh            # EN + 中文 screenshots of the Rele
 
 - **Per second, on the watch, offline**: the rule-based score shown in the ring (`FocusEngine` in `FlowbeatCore`).
 - **Every 2 minutes, via the backend**: a statistics-only summary (no raw samples) goes to the LLM along with your own labeled examples. The on-device rule score is **not** shown to the LLM (see [Run 3](#run-3--2026-11-12-is-the-anchoring-gone)). If the backend is unreachable, windows queue on the watch and are retried with backoff. If the LLM fails, the backend falls back to the rule score.
-- **On stop**: an AI review card. The session is saved to `Documents/sessions/*.json` (samples + windows + judgments + timeline + review) and sent to the iPhone app if it's installed.
+- **On stop**: an AI review card. The session is saved to `Documents/sessions/*.json` (samples + windows + judgments + timeline + review + plan) and sent to the iPhone app if it's installed.
+- **After every saved session (v1, on-device):** `DigestStore` compresses new archives into per-minute buckets (`Application Support/Flowbeat/digests.json`, with each session's label features) → History screen. A 60-day, 15-minute-bucket `WidgetSnapshot` goes to the App Group container → `WidgetCenter.reloadAllTimelines()` → complications. At the next session start, the label features train the personal model.
 
 ## Code layout
 
@@ -100,12 +124,21 @@ scripts/appstore_screenshots.sh            # EN + 中文 screenshots of the Rele
 | `…/FeatureFlags.swift` | `FeatureFlags` + `JudgeTransport`: the network client can only be built through the flag. |
 | `…/Onboarding.swift` | `OnboardingState` (versioned, UserDefaults) and `StartReadiness` (permission states → can start + notices). |
 | `…/SessionTimeline.swift`, `…/SessionArchive.swift` | Chart data for the iPhone (bucketing, gaps, labels, away spans, judgments) and the iPhone's session store. |
+| `…/DistractionNudge.swift` | Nudge state machine: N distracted minutes, cooldown, 15 s grace, no nudge while away / calibrating / on a break. |
+| `…/SessionPlan.swift` | Free run / Pomodoro (`PomodoroTimer`: phase from wall-clock time, one event per transition), session goal, focused minutes, longest streak. |
+| `…/FocusHistory.swift` | `SessionDigest` (per-minute UTC buckets), today / 7 days / streak / best hour with an injected `Calendar`, `DigestStore` cache. |
+| `…/WidgetSnapshot.swift` | 60 days of 15-minute buckets for the widget, timeline dates (now + next local midnight), `AppGroup.identifier`. |
+| `…/PersonalModel.swift` | Window features, label extraction from archives, logistic regression by plain gradient descent, blend with the rule score. |
 | `FlowbeatCore/Sources/FlowbeatPhoneUI/` | iPhone SwiftUI + Swift Charts views (in the package so they compile on macOS too). |
 | `Flowbeat/FocusSession.swift` | Watch: `HKWorkoutSession` (mind & body, discarded at the end) for background HR every few seconds, CoreMotion, timers, HRV query, networking via `JudgeSync`. |
 | `Flowbeat/AIJudge.swift` | **Debug only** (`#if FLOWBEAT_AI`): backend config, `HTTPJudgeTransport`, few-shot label store. |
 | `Flowbeat/AppFeatures.swift` | The build's flags; the only place the network client is constructed. |
 | `Flowbeat/PhoneSync.swift` | WatchConnectivity `transferFile` to the iPhone. |
-| `Flowbeat/ContentView.swift` | Start / in-session (vertical pages) / summary screens. |
+| `Flowbeat/ContentView.swift` | Start / in-session (vertical pages) / summary screens, Pomodoro break ring, nudge banner, goal card. |
+| `Flowbeat/SettingsView.swift`, `Flowbeat/AppSettings.swift` | Settings (nudge, Pomodoro, goals, personalization) and their UserDefaults keys; `Haptics`. |
+| `Flowbeat/History.swift`, `Flowbeat/HistoryView.swift` | `HistoryStore` (digests → summary → widget snapshot + timeline reload), History screen with Swift Charts. |
+| `Flowbeat/FocusIntents.swift`, `Flowbeat/AppShortcuts.xcstrings` | App Intents (start / Pomodoro / stop) and App Shortcuts phrases, EN + 中文. |
+| `FlowbeatWidgets/` | WidgetKit extension: provider + timeline, `Shared/` views and the App Group file (also compiled into the app). |
 | `Flowbeat/OnboardingView.swift`, `Flowbeat/Permissions.swift` | First-launch disclaimer + About, permission requests and denial notices. |
 | `Flowbeat/Localizable.xcstrings`, `*.lproj/InfoPlist.strings`, `PrivacyInfo.xcprivacy` | EN/中文 strings, permission texts, privacy manifest. |
 | `Config/Signing.xcconfig` | `DEVELOPMENT_TEAM`, the single signing setting. |
@@ -115,7 +148,7 @@ scripts/appstore_screenshots.sh            # EN + 中文 screenshots of the Rele
 | `backend/app/` | FastAPI: `schemas.py` (validation), `prompts.py`, `providers.py` (Qwen / Claude / Fake), `resilience.py` (timeout, retry, fallback), `config.py`, `logs.py`, `main.py`. |
 | `backend/scripts/compare_models.py` | Model + anchoring comparison. Raw results are in `backend/scripts/results/`. |
 
-During a session you can tap **专注 (focused)** or **走神 (distracted)** to label the moment. Labels become few-shot examples for the LLM (last 20, kept on the watch) and are stored in the session JSON for later tuning.
+During a session you can tap **专注 (focused)** or **走神 (distracted)** to label the moment. Labels are stored in the session JSON. In Release builds they train the on-device personal model (stage 23); in Debug builds they also become few-shot examples for the LLM (last 20, kept on the watch).
 
 Blood oxygen is intentionally not used: third-party apps can't trigger SpO₂ readings, and it doesn't change with focus.
 
@@ -154,11 +187,12 @@ Optional env: `QWEN_MODEL` (default `qwen3.8-flash`), `CLAUDE_MODEL`, `LOG_FORMA
 
 | Suite | Command | Result (2026-11-12) |
 |---|---|---|
-| Swift logic (macOS) | `cd FlowbeatCore && swift test` | **102 passed** (2026-11-13) |
-| Same suite on the watchOS 11.4 simulator | `xcodegen generate && xcodebuild test -project Flowbeat.xcodeproj -scheme Flowbeat -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)'` | **102 passed** (2026-11-13) |
+| Swift logic (macOS) | `cd FlowbeatCore && swift test` | **157 passed** (2026-11-13) |
+| Same suite on the watchOS 11.4 simulator | `xcodegen generate && xcodebuild test -project Flowbeat.xcodeproj -scheme Flowbeat -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)'` | **157 passed** (2026-11-13) |
+| Every UI string has 中文 | `scripts/check_localization.py <derived-data>` (after a Debug build) | watch app 122, widget 7, 0 missing |
 | Backend (fake / scripted providers, no LLM calls) | `cd backend && uv run pytest` | **48 passed** |
 | Release has no network code | `scripts/verify_release_offline.sh` | Debug 6/6 markers, Release 0/6 → OK |
-| CI (`.github/workflows/ci.yml`) | on every push to `main` | backend pytest · Docker build + container smoke test · `swift test` on macOS · watchOS-simulator tests · Release offline check · iPhone app Debug + Release builds · iOS-simulator screenshots |
+| CI (`.github/workflows/ci.yml`) | on every push to `main` | backend pytest · Docker build + container smoke test · `swift test` on macOS · watchOS-simulator tests · localization check · widget embedded + App Intents metadata · Release offline check · iPhone app Debug + Release builds · iOS-simulator screenshots |
 
 What the Swift tests cover:
 - **Calibration, penalties and smoothing:** median calibration, motion/HR penalty boundaries, smoothing.
@@ -169,6 +203,11 @@ What the Swift tests cover:
 - **Feature flag:** with the AI flag off, the network client's factory is never called (no client, no requests).
 - **Persistence:** queue round trip, 1 h expiry and 30-item cap re-applied on load, corrupt files, path traversal, in-order delivery after a relaunch, late judgments added to the archive.
 - **Onboarding and permissions:** onboarding completion survives a relaunch and reappears for a new version; Health denied blocks Start with guidance; Motion denied only warns.
+- **Nudge:** trigger timing, cooldown, grace period, no nudge while away / calibrating / on a break / disabled.
+- **Modes and goals:** Pomodoro phases and transitions on a fake clock, long sleeps, focused minutes, longest streak, goal result, v1 archives still decode.
+- **History:** per-minute digests, midnight split, LA / Shanghai / UTC / Kolkata / New York DST, streak rules, best hour, digest cache.
+- **Widget:** 15-minute buckets, midnight reset in the timeline, retention, UTC+5:45.
+- **Personal model:** learns a separable synthetic pattern, falls back below 8 labels per class, deterministic weights, blend, features from archives.
 - **Contract:** the Swift JSON keys must match the backend's Pydantic fields. Both sides read `FlowbeatCore/Tests/FlowbeatCoreTests/Fixtures/contract_fields.json`; regenerate it with `uv run python scripts/export_contract.py`.
 
 ## Model comparison
@@ -269,6 +308,7 @@ Targets (all depend on the local `FlowbeatCore` package):
 - `Flowbeat`: watchOS 10+, bundle `com.xungirl.flowbeat.watchkitapp`, watch-only (v1).
 - `FlowbeatWatchCompanion`: the same sources and bundle ID, as a companion.
 - `FlowbeatPhone`: iOS 17+, bundle `com.xungirl.flowbeat`, embeds `FlowbeatWatchCompanion`.
+- `FlowbeatWidgets`: watchOS WidgetKit extension, bundle `com.xungirl.flowbeat.watchkitapp.widgets`, embedded in both watch targets.
 
 Debug = AI judge on; Release = AI off.
 
@@ -282,6 +322,10 @@ Debug = AI judge on; Release = AI off.
 - `-demoLabels` taps 专注/走神 automatically once per cycle.
 - `-demoStopAfter <seconds>` ends the session and saves the JSON.
 - `-onboardingPage <n>` opens the first-launch screens at page n; `-demoDenied` pretends Health and Motion were denied (for screenshots of the guidance).
+- `-demoPomodoro` starts a Pomodoro instead; `-demoPomodoroOffset <s>` pretends the Pomodoro timer started s seconds ago (1480 → the break starts 20 s in).
+- `-demoHistory` replaces the history with a fixed sample week (in memory only); `-openHistory` opens the History screen; `-scrollBottom` scrolls History to the bottom; `-scrollToGoal` scrolls the summary to the goal card; `-widgetGallery` renders the widget views inside the app.
+- Any setting can be passed as a UserDefaults argument, e.g. `-goal.sessionMinutes 1`.
+- With an unsigned build there is no App Group, so the widget shows 0. Build with `CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual` (ad-hoc) to get the App Group container in the simulator.
 
 ```bash
 xcrun simctl launch <watch-udid> com.xungirl.flowbeat.watchkitapp -demo -demoLabels -demoStopAfter 245
@@ -296,7 +340,7 @@ The simulator has no real sensors, so scores there are meaningless. Only a real 
 
 ## Project Journey
 
-Stages 1–6 happened on 2026-11-11, stages 7–12 on 2026-11-12 and stages 13–17 (App Store v1 preparation) on 2026-11-12/13 (see `git log`). Each stage links to the section above that holds the details, so they aren't repeated here.
+Stages 1–6 happened on 2026-11-11, stages 7–12 on 2026-11-12, stages 13–17 (App Store v1 preparation) on 2026-11-12/13 and stages 18–23 (on-device features) on 2026-11-12/13 (see `git log`). Each stage links to the section above that holds the details, so they aren't repeated here.
 
 ### 1. v0: rule-based focus score on the watch (`13a8f6a`)
 - **Goal:** a live 0–100 focus estimate from signals a watch can read continuously.
@@ -475,6 +519,81 @@ Stages 1–6 happened on 2026-11-11, stages 7–12 on 2026-11-12 and stages 13�
 - **Problem found:** the first version of the offline check reported 0 markers in Debug as well. macOS `strings` reading Mach-O from stdin doesn't scan the data sections, and Debug code lives in `Flowbeat.debug.dylib`. Without the "Debug must contain every marker" rule, Release's "0 found" would have passed for the wrong reason. **Fix:** scan each Mach-O file directly, and use only markers that really exist in a simulator Debug build.
 - **Not verifiable locally:** whether App Store Connect still accepts 410 × 502 / 416 × 496 watch screenshots (the newest simulator here is watchOS 11.4: no Ultra 3 / Series 11); how ASC wants the bundle ID for a watch-only app record (archiving needs signing). `simctl status_bar override` had no effect on the watch simulator, so the screenshots show the real clock.
 
+### 18. Gentle haptic nudge (`c410355`)
+- **Goal:** bring a drifting user back without nagging.
+- **Decision:**
+  - A state machine in Core (`DistractionNudge`): "distracted" = score < 40 for N consecutive minutes (default 3), then a cooldown (default 10 min) **and** a fresh N-minute streak before the next nudge.
+  - A **15 s grace period**: the smoothed score flickering above 40 for a few seconds doesn't reset the streak. Without it a really distracted user might never get a nudge.
+  - Never during calibration, while away, on a break, or without a score; each of those also resets the streak.
+  - `.directionUp`, the lightest pattern that is still a double tap. `.notification` feels like an incoming message.
+- **Built:** a Settings screen (gear on the start screen) with a toggle (on by default), minutes and cooldown; a short banner under the ring; nudge count on the summary.
+- **Verified:** 14 unit tests (fires exactly at 3:00, 30 distracted minutes → 3 nudges at 180/780/1380 s, grace, away/calibration/break/disabled). **Not verified:** how the haptic feels on a real wrist (checklist test 14).
+
+### 19. Session modes and goals (`f641047`)
+- **Goal:** Pomodoro for people who work in blocks, and a concrete target per session.
+- **Decision:**
+  - `PomodoroTimer.phase` is a **pure function of start date + now**, not a tick counter: a timer delayed while the wrist is down still lands in the right phase.
+  - `update(now:)` reports one transition, and after a long sleep only the latest one (one haptic, not a burst).
+  - Breaks pause scoring, calibration, away tracking, the nudge and AI judging. Walking during a break isn't "away"; the last activity is applied when work resumes.
+  - "Focused minutes" = seconds with score ≥ 70, the same definition as "time in flow". The longest streak is broken by away, break and calibration seconds.
+- **Built:** a Pomodoro button with the configured lengths, break ring and phase countdown, "Work n · goal" line, haptics on transitions and once when the goal is reached, a goal card on the summary. `SessionPlan` is saved in the archive; `FocusSample.onBreak` is optional, so v1 archives still decode.
+- **Verified:** 13 unit tests; the timer tests run on a **fake clock** (61 minutes in 1 s steps → exactly 4 transitions). Simulator: break screen and summary in EN/中文.
+- **Problem found:** the first break ring showed ~0 % progress and the countdown was off by the demo offset. The UI computed remaining time from the *session* elapsed time, but the Pomodoro has its own start date. **Fix:** `pomodoroRemaining` / `pomodoroProgress` read the timer's own clock.
+- **Known slip:** the commit message says "14 tests"; it's 13.
+
+### 20. History and stats on the watch (`f89c686`)
+- **Goal:** answer "how much did I focus today / this week, and when am I best?" on the wrist.
+- **Decision:** compress each archive into **per-minute buckets keyed by absolute (UTC) time** (`SessionDigest`). Days and hours are assigned only at display time, with the current `Calendar`:
+  - a session across midnight splits by each second's own time;
+  - after a time-zone change "today" follows the new zone with no migration;
+  - half-hour zones (UTC+5:30) work because the buckets are whole minutes;
+  - going back one day uses `calendar.date(byAdding: .day, value: -1)`, never −86400 s (DST days have 23/25 hours).
+  - The streak ignores an unfinished today. "Best hour" = highest focused ratio among hours with ≥ 10 scored minutes.
+- **Built:** `DigestStore` (one JSON cache; only new archives are parsed, deleted ones dropped), History screen (today ring vs. daily goal, streak, Swift Charts 7-day bars with a goal rule, best time of day), "History · Today n min" on the start screen, daily goal in Settings (default 60 min).
+- **Verified:** 14 unit tests over Los Angeles, Shanghai, UTC, Kolkata and New York (DST week). Simulator screenshots from a fixed sample week (`-demoHistory`).
+
+### 21. Complications / Smart Stack widget (`0f2fa46`)
+- **Goal:** today's focused minutes and goal progress on the watch face; tap to open the app.
+- **Decision:**
+  - A WidgetKit **app extension target in `project.yml`** (XcodeGen handled it: `type: app-extension` + `NSExtensionPointIdentifier`, embedded via a target dependency).
+  - Data through an **App Group file**, not a `UserDefaults` suite (that would add required-reason API 1C8F.1).
+  - The snapshot holds raw **15-minute buckets** for 60 days. Every UTC offset is a multiple of 15 min, so no bucket spans two local days. The widget computes "today" with the same `FocusHistory.summary`, so it rolls over at midnight and follows time zones on its own.
+  - Timeline = now + next local midnight, policy `.atEnd`. The app reloads timelines only when the snapshot changed (session end, goal edit), to stay within WidgetKit's reload budget.
+- **Verified:**
+  - 5 unit tests (quarter-hour merge, midnight reset, retention, round trip, UTC+5:45 split).
+  - The extension builds into `Flowbeat.app/PlugIns/`, and `pluginkit` in the watch simulator lists it.
+  - With an ad-hoc-signed simulator build, the snapshot file appears in the App Group container after a demo session.
+- **Problems found:**
+  - Unsigned builds (`CODE_SIGNING_ALLOWED=NO`) have no entitlements, so `containerURL` is nil. The code treats that as "no data" (the widget shows 0) instead of crashing.
+  - XcodeGen warned that `FlowbeatWidgets/Shared` belonged to two groups. **Fix:** the extension excludes `Shared/**` from its main path and adds `Shared` as a separate source.
+  - `verify_release_offline.sh` only scanned `Flowbeat` and `*.dylib`, so it would have missed the new widget binary. **Fix:** it scans `FlowbeatWidgets` too and prints how many Mach-O files it scanned.
+- **Not verified:** rendering on a real watch face (vibrant/tinted modes). The `10-widgets` screenshots render the widget views inside the app.
+
+### 22. App Intents (`d972950`)
+- **Goal:** start or stop a session without opening the app's UI.
+- **Built:**
+  - `StartFocusIntent`, `StartPomodoroIntent` (open the app, because the workout must start in the foreground) and `StopFocusIntent` (background, since a running workout keeps the app alive).
+  - An `AppShortcutsProvider` with EN phrases and 中文 phrases (`AppShortcuts.xcstrings`). All three use `FocusSession.shared`.
+  - watchOS 11 double tap (`handGestureShortcut(.primaryAction)`) on the in-session "Focused" button: a mistaken label is cheap, a mistaken "End" is not.
+- **Decision:** no `StartWorkoutIntent`. That's the Action button's workout slot, and Flowbeat isn't a workout app. Ultra users can bind the shortcut under Settings → Action Button → Shortcut instead.
+- **Verified:** builds for the watchOS 11.4 simulator; the extracted `Metadata.appintents` lists 3 actions and 3 App Shortcuts. **Not invoked through Siri** (needs a device).
+
+### 23. On-device personalization from labels (`a420e87`)
+- **Goal:** use the 专注/走神 labels in the offline build, not only as LLM few-shot examples in Debug.
+- **Decision:**
+  - **Logistic regression** over 4 window features: wrist stillness ratio, mean motion, HR − session baseline, and HRV when present.
+  - Features standardized, missing values imputed to the mean; plain full-batch gradient descent in Swift (400 iterations, lr 0.5, L2 0.01, zero init), so it's **deterministic** and needs no Create ML.
+  - Active only with **≥ 8 labels of each class**; display score = 0.5 × rule + 0.5 × 100 × p(focused).
+  - Label features are extracted from the archives (baseline = median calibration HR, the scorer's own algorithm) and cached in the digests. The model retrains at session start and after each new label.
+- **Built:** "Personalized" in the ring when active; Settings shows the label counts or what's missing, plus the top factors with their direction, and an off switch.
+- **Verified:**
+  - 9 unit tests on synthetic data: 100 % training accuracy and ≥ 95 % on 60 unseen samples from another seed, intuitive weight signs, nil below 8 labels per class, bit-identical weights across runs, blend formula with a missing heart rate, HRV used when present.
+  - Simulator demo with auto-labels (`-demoLabels`): "Personalized" appeared once 8 + 8 labels existed.
+- **Honest limits:**
+  - **Not validated on real users.** Labels are self-reports, not ground truth; synthetic data being separable says nothing about real wrists.
+  - The thresholds (8 labels, 50/50 blend) are guesses.
+  - Release builds don't request HRV, so that feature is always missing there and its weight stays 0.
+
 ### Key metrics
 
 | Metric | Value | How measured | Source |
@@ -487,24 +606,32 @@ Stages 1–6 happened on 2026-11-11, stages 7–12 on 2026-11-12 and stages 13�
 | Chosen model latency | median 1.10 s (0.78–2.06) for `qwen3.8-flash`, 1.51 s for `qwen3.8-max` | wall clock per call | Run 3 |
 | Tokens per judgment | median 749 in / 35 out (2 few-shot examples) | API usage | Run 3 |
 | Real LLM calls, 2026-11-12 | 122 total: 90 comparison + 6 re-check + 2 HRV check + 6 smoke/debug + 18 sample-session demo | counted per run | this README |
-| Swift unit tests | 102 passing, on macOS and the watchOS 11.4 simulator (75 before the v1 work) | `swift test`, `xcodebuild test` | `FlowbeatCore/Tests/` |
+| Swift unit tests | 157 passing, on macOS and the watchOS 11.4 simulator (102 before stages 18–23, 75 before the v1 work) | `swift test`, `xcodebuild test` | `FlowbeatCore/Tests/` |
+| New tests per feature | nudge 14 · modes/goals 13 · history 14 · widget snapshot 5 · personal model 9 | `swift test` per test class | `FlowbeatCore/Tests/FlowbeatCoreTests/` |
+| Nudge defaults | after 3 min with score < 40, cooldown 10 min, 15 s grace; 30 distracted min → 3 nudges | `NudgeSettings`, `DistractionNudgeTests` | `FlowbeatCore/Sources/FlowbeatCore/DistractionNudge.swift` |
+| Pomodoro | 25/5 min default (work 5–90, break 1–30); 61 fake-clock minutes → 4 transitions | `PomodoroTimerTests` | `…/SessionPlan.swift` |
+| History storage | 1 bucket per minute (60 per hour vs. 3600 samples); widget: 15-min buckets, 60 days | `SessionDigest.make`, `WidgetSnapshot.make` | `…/FocusHistory.swift`, `…/WidgetSnapshot.swift` |
+| Widget timeline | 2 entries (now + next local midnight), reload only when the snapshot changed | `WidgetSnapshot.timelineDates`, `HistoryStore.apply` | `FlowbeatWidgets/FlowbeatWidgets.swift` |
+| App Intents | 3 actions, 3 App Shortcuts (5 EN phrases + 5 中文) | extracted `Metadata.appintents` | `Flowbeat/FocusIntents.swift` |
+| Personal model | 4 features, ≥ 8 labels per class, 400 GD iterations, 50/50 blend; synthetic: 100 % train, ≥ 95 % on 60 held-out | `PersonalModelTests` (synthetic only, **no real users**) | `…/PersonalModel.swift` |
 | Backend tests | 48 passing (no LLM calls) | `uv run pytest` | `backend/tests/` |
 | Offline queue | backoff 15 → 30 → … ≤ 300 s, cap 30, max age 1 h, ≤ 8 attempts | unit tests | `FlowbeatCore/Sources/FlowbeatCore/OfflineQueue.swift` |
 | Outage recovery (simulator) | 62 s outage, 2 windows queued, delivered in order 6 s after restart | backend access log timestamps | stage 10 |
 | LLM failure handling | 8 s timeout, 1 retry, rule-score fallback; unreachable upstream → fallback in 535 ms | live run with DashScope pointed at a dead port | stage 9 |
 | Review endpoint | 0/2 → 2/2 valid live reviews after the prompt-format fix | live calls | stage 9 |
-| Release build network code | 0/6 backend markers in Release, 6/6 in Debug | `strings` over every Mach-O in the app bundle | `scripts/verify_release_offline.sh` |
+| Release build network code | 0/6 backend markers in Release, 6/6 in Debug; 2 / 6 Mach-O files scanned (app + widget) | `strings` over every Mach-O in the app bundle | `scripts/verify_release_offline.sh` |
 | Release demo network requests | 0 requests in 75 s (Debug: `/v1/judge` 200 within the first window) | local backend access log | stage 13 |
 | Queue survives relaunch (simulator) | 2 windows on disk → 2 delivered in order after relaunch, file removed, +2 judgments in the archive | app container files + backend log | stage 15 |
-| Localization | 54 watch strings + 19 iPhone-view strings + 8 iPhone-app strings, EN source + 中文 | String Catalog / `.strings` | `Flowbeat/Localizable.xcstrings` |
-| App Store screenshots | 20 (5 screens × EN/中文 × Ultra 2 410×502, Series 10 416×496), Release build, demo mode | `scripts/appstore_screenshots.sh` | `docs/appstore/screenshots/` |
+| Localization | 122 watch strings + 5 Siri phrases + 7 widget strings + 19 iPhone-view strings + 8 iPhone-app strings, EN source + 中文 | String Catalogs / `.strings`; no extracted key without a translation | `Flowbeat/*.xcstrings`, `FlowbeatWidgets/Localizable.xcstrings` |
+| App Store screenshots | 40 (10 screens × EN/中文 × Ultra 2 410×502, Series 10 416×496), Release build, demo mode | `scripts/appstore_screenshots.sh` | `docs/appstore/screenshots/` |
 | Version | 1.0.0 (1) | `MARKETING_VERSION`, `CURRENT_PROJECT_VERSION` | `project.yml` |
 
-Caveat: the comparison is a smoke test (6 synthetic windows, 2–3 runs per cell), not a statistical evaluation. All app results come from the simulator with simulated sensors. **Nothing has run on a real Apple Watch**, and the focus score has not been validated against real labels. The v1 build has not been signed, archived or submitted, and battery drain, background survival and the real permission flows are still unmeasured.
+Caveat: the comparison is a smoke test (6 synthetic windows, 2–3 runs per cell), not a statistical evaluation. All app results come from the simulator with simulated sensors. The personal model's numbers come from synthetic data only. **Nothing has run on a real Apple Watch**, and the focus score has not been validated against real labels. The v1 build has not been signed, archived or submitted, and battery drain, background survival and the real permission flows are still unmeasured.
 
 ### Next steps
 - **When the developer account is approved:** paste the Team ID into `Config/Signing.xcconfig`, run the real-device test plan in [`docs/appstore/submission-checklist.md`](docs/appstore/submission-checklist.md) (HR sample rate, battery drain per hour, background survival, permission flows, a 30-min session), then TestFlight → submit.
-- Collect ≥ 10 labeled sessions, then measure the rule score and the LLM judge against the labels (accuracy / F1). Tune thresholds or train a personal model.
+- **Also on the Team ID:** register the App Group `group.com.xungirl.flowbeat` and the widget App ID (checklist step 2), then run the new device tests 14–21 (haptics, Pomodoro with the wrist down, complications, Siri, double tap, personalization).
+- Collect ≥ 10 labeled sessions, then measure the rule score, the personal model (held-out sessions, not training accuracy) and the LLM judge against the labels (accuracy / F1). Tune the nudge threshold, the 8-label minimum and the 50/50 blend from that data.
 - v1.1: test WatchConnectivity on a real pair, then ship the iPhone companion. Add rate limiting and HTTPS before any backend deployment.
 
 ## Roadmap
@@ -522,7 +649,8 @@ Caveat: the comparison is a smoke test (6 synthetic windows, 2–3 runs per cell
 - [x] App Store v1 preparation: AI as a build-time flag (Release has no network code, checked in CI), signing xcconfig, EN/中文, privacy manifest, persisted offline queue, first-launch disclaimer + permission handling, listing / review notes / privacy policy / checklist / screenshots
 - [ ] **Run on a real Apple Watch** and collect labeled sessions
 - [ ] Submit v1 (watch-only) to the App Store: waiting for the developer account
-- [ ] Validate the score against labels; tune thresholds / train a personal model (Create ML)
+- [x] Haptic nudge, Pomodoro + session goal, watch history (Swift Charts), complications (WidgetKit + App Group), App Intents / App Shortcuts, on-device personalized scoring (logistic regression from labels). Simulator only
+- [ ] Validate the score and the personal model against real labels; tune thresholds
 - [ ] Deploy the backend with HTTPS and rate limiting
 - [ ] Integrate with [Nod](https://github.com/xungirl/Nod): hold notifications while you're in flow
 

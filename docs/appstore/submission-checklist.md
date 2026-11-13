@@ -1,6 +1,6 @@
 # Submission checklist — from "account approved" to "submitted"
 
-Status (2026-11-12): all code, config and docs are done. **Nothing has been signed, run on a real Apple Watch, uploaded or submitted.** Do the steps in order. Each one says how you know it's done.
+Status (2026-11-13): all code, config and docs are done, including the haptic nudge, Pomodoro + goals, history, complications (WidgetKit + App Group), App Intents and personalized scoring. **Nothing has been signed, run on a real Apple Watch, uploaded or submitted.** Do the steps in order. Each one says how you know it's done.
 
 ## 0. Decision already made: ship the watch app alone (no iPhone app) in v1
 
@@ -25,7 +25,7 @@ watchOS refuses to install an app that declares both `WKWatchOnly` and `WKRunsIn
 1. developer.apple.com → Account → **Membership details** → copy the **Team ID** (10 characters).
 2. Paste it into `Config/Signing.xcconfig`: `DEVELOPMENT_TEAM = AB12CD34EF`. Commit it (a Team ID isn't secret).
 3. `xcodegen generate && open Flowbeat.xcodeproj`.
-4. In the `Flowbeat` target, open **Signing & Capabilities**. It should show your team, "Automatically manage signing" and the **HealthKit** capability with no red errors. Xcode registers the App ID on first build to a device.
+4. In the `Flowbeat` target, open **Signing & Capabilities**. It should show your team, "Automatically manage signing", the **HealthKit** capability and **App Groups** with `group.com.xungirl.flowbeat` ticked, with no red errors. Do the same for the `FlowbeatWidgets` target (App Groups only). Xcode registers the App IDs on first build to a device.
 
 ✅ Done when an Xcode build to your watch succeeds with automatic signing.
 
@@ -33,7 +33,9 @@ watchOS refuses to install an app that declares both `WKWatchOnly` and `WKRunsIn
 
 Automatic signing usually does this for you. Check it at developer.apple.com → Certificates, IDs & Profiles → Identifiers:
 
-- [ ] `com.xungirl.flowbeat.watchkitapp`, with **HealthKit** checked. Leave "Clinical Health Records" and "Background Delivery" off; neither is used.
+- [ ] `com.xungirl.flowbeat.watchkitapp`, with **HealthKit** and **App Groups** checked. Leave "Clinical Health Records" and "Background Delivery" off; neither is used.
+- [ ] **App Group `group.com.xungirl.flowbeat`**: Identifiers → "+" → App Groups → description "Flowbeat", identifier `group.com.xungirl.flowbeat`. Then edit both App IDs (watch app and widget) → App Groups → Configure → tick it. Automatic signing can create the group too, but check that it exists under *your* Team ID: the identifier in `project.yml`, both `.entitlements` files and `FlowbeatCore/…/WidgetSnapshot.swift` (`AppGroup.identifier`) must match exactly. If the name is taken, pick another and change all four places.
+- [ ] `com.xungirl.flowbeat.watchkitapp.widgets` (widget extension), with **App Groups** checked.
 - [ ] (Only if you ship the companion) `com.xungirl.flowbeat`. No capabilities needed.
 - [ ] App Store Connect → **My Apps → + New App**: platform **watchOS** (watch-only), name from `listing.md`, primary language English (U.S.), bundle ID as offered for the watch app, SKU e.g. `flowbeat-1`.
   - ⚠️ For a watch-only app, App Store Connect / Xcode may want the record's bundle ID to be the parent (`com.xungirl.flowbeat`) with the watch app inside an Xcode-generated stub. **Not verified locally:** archiving needs signing. If Organizer's validation complains, follow its message on which bundle ID the record needs, and register that ID too.
@@ -57,6 +59,14 @@ Build the **Release** configuration to the watch (Product → Scheme → Edit Sc
 | 11 | About | Tap (i) on the start screen | The disclaimer pages and version 1.0.0 (1) appear |
 | 12 | Kill mid-session | Force-quit during a session | Relaunch is clean (no saved session is expected; known limitation) |
 | 13 | Airplane mode | Run a session in airplane mode | Identical behavior (the app has no network code) |
+| 14 | **Haptic nudge** | Session with wrist down; fidget for 3+ min (or set "After" to 1 min) | One gentle tap after N min, felt with the wrist down; no second tap within the cooldown; none while walking or calibrating. Is `.directionUp` noticeable but not annoying? Record the result |
+| 15 | **Pomodoro** | Set work 5 / break 1 min in Settings, start Pomodoro, lower the wrist | Haptic at 5:00 (break) and 6:00 (work) even with the wrist down; break ring shows; summary has no scores during the break |
+| 16 | Session goal | Set a 15-min goal, run 20 min | One success haptic when reached; the summary shows "Goal reached" |
+| 17 | History | After 2+ sessions on different days | Today / 7-day bars / streak / best time match the sessions; after midnight "today" resets |
+| 18 | **Complications** | Add "Focus today" to a face (circular, rectangular, inline, corner) and the Smart Stack | Shows today's minutes; updates within a minute of ending a session; resets after midnight; tap opens Flowbeat; both languages fit |
+| 19 | **Siri / Shortcuts** | "Start focus in Flowbeat", "Start a Pomodoro in Flowbeat", "Stop focus in Flowbeat"; 「在心流开始专注」 in 中文; Shortcuts app; Ultra: Settings → Action Button → Shortcut | Each works; Stop saves the session without opening the app |
+| 20 | Double tap (Series 9+/Ultra 2, watchOS 11) | During a session, on the controls page, double-tap | Marks "Focused" |
+| 21 | Personalized scoring | Label 8+ focused and 8+ distracted moments across sessions | Settings shows "Active" with the top factors; the ring shows "Personalized". Note whether the score feels better or worse (not validated) |
 
 If 5–7 fail (the app is suspended or the battery drain is unacceptable), stop and fix before going further.
 
@@ -66,7 +76,7 @@ If 5–7 fail (the app is suspended or the battery drain is unacceptable), stop 
 
 ## 5. Screenshots
 
-- Fresh simulator screenshots of the Release build are in `docs/appstore/screenshots/` (5 per language, English + 简体中文), made by `scripts/appstore_screenshots.sh` in **demo mode** (simulated sensors).
+- Fresh simulator screenshots of the Release build are in `docs/appstore/screenshots/` (10 per language, English + 简体中文), made by `scripts/appstore_screenshots.sh` in **demo mode** (simulated sensors; history is a fixed sample week, not measurements). Screens 6–10 are Pomodoro break, summary with goal, history (two scrolls) and the widget views. The widget shot (`10-widgets`) renders the widget views inside the app; it is **not** a real watch face. For App Store use, prefer a real-device screenshot of the complication on a face.
   - Apple Watch Ultra 2 (49mm): 410 × 502 px.
   - Apple Watch Series 10 (46mm): 416 × 496 px.
 - **Check in App Store Connect which watch size it requires now.** At the time of writing, the largest current watch sizes are Ultra 3 (422 × 514) and Series 11 (416 × 496), but the local Xcode 16.3 only has the watchOS 11.4 simulators listed above. **Not verified:** that 410 × 502 / 416 × 496 are still accepted. If ASC asks for 422 × 514, install a newer Xcode / watchOS simulator and rerun the script with that model name in `MODELS`, or take screenshots on the real watch (side button + Digital Crown, synced to the iPhone Photos app).
@@ -106,7 +116,7 @@ If 5–7 fail (the app is suspended or the battery drain is unacceptable), stop 
 
 ## What only the developer can do
 
-1. Paste the Team ID (step 1).
+1. Paste the Team ID (step 1), and register the App Group `group.com.xungirl.flowbeat` plus the widget App ID under it (step 2).
 2. Run the real-device test plan (step 3) and record the results.
 3. Host the privacy policy and support page and fill in the contact email.
 4. Archive, upload, fill App Store Connect and submit (steps 6–8).

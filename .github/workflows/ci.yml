@@ -54,7 +54,7 @@ jobs:
       - run: swift test --package-path FlowbeatCore
 
   apps:
-    name: Watch tests + Release offline check + iPhone builds and screenshots
+    name: Watch tests + l10n/widget/intents checks + Release offline check + iPhone builds and screenshots
     runs-on: macos-15
     defaults:
       run:
@@ -84,6 +84,14 @@ jobs:
         run: |
           xcodebuild test -project Flowbeat.xcodeproj -scheme Flowbeat -destination "id=$WATCH" \
             -derivedDataPath dd CODE_SIGNING_ALLOWED=NO | tail -n 5
+      - name: Every watch and widget string has a zh-Hans translation
+        run: python3 scripts/check_localization.py dd
+      - name: Watch app embeds the widget extension and the App Intents metadata
+        run: |
+          APP=dd/Build/Products/Debug-watchsimulator/Flowbeat.app
+          test -f "$APP/PlugIns/FlowbeatWidgets.appex/FlowbeatWidgets"
+          python3 -c 'import json,sys; a=sorted(json.load(open(sys.argv[1]))["actions"]); print(a); assert a==["StartFocusIntent","StartPomodoroIntent","StopFocusIntent"]' \
+            "$APP/Metadata.appintents/extract.actionsdata"
       - name: Release (AI off) watch build contains no backend/network code
         # builds Debug + Release of the watch-only scheme, scans both binaries (see the script header)
         run: DEST="id=$WATCH" scripts/verify_release_offline.sh dd-verify

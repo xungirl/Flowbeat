@@ -1,12 +1,14 @@
 # Flowbeat 面试准备手册（中文）
 
-> 这份文档带你按「教学顺序」把 Flowbeat 的代码一个文件一个文件读懂，再给出约 20 道面试官可能问的问题和基于这份代码的回答。
+> 这份文档带你按「教学顺序」把 Flowbeat 的代码一个文件一个文件读懂，再给出 34 道面试官可能问的问题和基于这份代码的回答。
 > 每个文件分三层：**(a) 骨架**：它做什么；**(b) 为什么**：为什么这样设计；**(c) 语法**：用到的 SwiftUI / HealthKit / CoreMotion / WatchConnectivity / Python 语法。
 > 力气花在前两层，语法层看懂即可。
 >
 > **先说清楚边界（面试时主动讲）：** 这个 app **从没在真手表上跑过**。所有端到端验证都在 watchOS 模拟器的演示模式里（传感器是模拟的）；iPhone app 只在 GitHub Actions 的 iOS 模拟器上构建、截图过；专注分数**没有**和任何真实标注数据比对过。下面写的每一个数字都能在仓库里找到出处。
 >
 > **v1 上架状态（2026-11-13）：** 代码、配置、文档都准备好了（第五部分）：手表独立 app、完全本地、不联网，AI 判断只在 Debug 版里。还没签名、没在真机上测、没提交，开发者账号还在审核。
+>
+> **v1 新功能（2026-11-13，第六部分）：** 走神轻震提醒、番茄钟 + 目标、手表上的历史统计、表盘复杂功能（WidgetKit + App Group）、App Intents（Siri / 快捷指令）、用自己的标签在手表上训练的逻辑回归。全部本地，同样只在模拟器里跑过。
 
 ---
 
@@ -30,6 +32,11 @@ CoreMotion 加速度 ├─ 每秒 FocusEngine.tick ─ 圆环分数   │ /v1/j
 1. **手表本地规则**（每秒）：透明、离线、不花钱。
 2. **LLM 第二意见**（每 2 分钟）：拿你自己的标注做 few-shot，给个性化判断和一句理由。
 3. **iPhone**（结束后）：看整段曲线。
+
+v1 新功能（第六部分）全在手表本地，接在这张图的「每秒」和「结束」两处：
+- **每秒**：规则分 →（标签够了就）和个性化模型的概率各占一半 → 走神提醒状态机 → 番茄钟阶段（休息时整个打分暂停）。
+- **结束**：存档 → `DigestStore` 压成每分钟一个桶 → 历史页；再压成 15 分钟一个桶写进 App Group → 表盘小组件 reload；标签特征跟着摘要缓存，下次开始时训练模型。
+- **Siri / 快捷指令**：App Intents 直接调同一个 `FocusSession.shared` 开始、结束。
 
 代码分成三块：
 - `FlowbeatCore/`：Swift Package，**纯逻辑**（没有传感器、没有 UI），macOS 上 `swift test`、watchOS 模拟器上 `xcodebuild test` 都能跑。
@@ -439,9 +446,157 @@ v1 的产品决定：**手表优先、完全本地、不联网**。上架版只�
 
 **(c) 语法**：XcodeGen 的 `targetTemplates` + `templates: [WatchApp]`；`configFiles` 把 xcconfig 挂到项目级配置上。注意：target 自己写了的 build setting 会覆盖 xcconfig，所以 target 里删掉了 `DEVELOPMENT_TEAM: ""`。
 
+## 第六部分：v1 新功能（2026-11-13）
+
+六个新功能，按优先级做、每个单独一个 commit。纯逻辑都在 FlowbeatCore，有单元测试；手表端只是接线和界面。**同样只在模拟器里跑过，没上过真手表**：震动轻不轻、复杂功能在表盘上长什么样、Siri 能不能听懂，都还不知道。
+
+### 24. 走神轻震提醒：`DistractionNudge.swift`（Core）+ `FocusSession.tick` + `AppSettings.swift`
+
+**(a) 骨架**
+- 状态机，每秒喂一次 `Input(elapsed, score, calibrating, away, onBreak)`，返回「这一秒要不要震」。
+- 「走神」= 有分数且 < 40（和圆环「走神」颜色同一个分界）。连续走神满 N 分钟（默认 3）→ 震一次；两次之间至少隔 X 分钟（默认 10）；震完要**重新**连续走神 N 分钟。
+- 宽限期：分数回到 40 以上要**连续 15 秒**才清零。
+- 校准、离座、番茄钟休息、没有分数：不震，并且清零。
+- 手表端：`Haptics.nudge()` 播 `.directionUp`，圆环下面显示 8 秒「走神了？回来吧」，结束页多一行「提醒 n 次」。设置页：开关（默认开）、N、X。
+
+**(b) 为什么**
+- **为什么要宽限期？** 分数是指数平滑过的，在 40 附近会上下抖。没有宽限期的话，抖一下就清零，真走神的人永远等不到提醒。15 秒是「短暂抬头」和「真回来了」的分界，是我拍的数，没有真机数据。
+- **为什么要冷却 + 重新计时两个条件？** 冷却保证「最多每 10 分钟一次」；重新计时保证震完之后如果你马上回神又走神，不会刚过冷却就立刻再震。两个一起才叫「不唠叨」。
+- **为什么离座和休息要清零而不是暂停？** 走路回来、休息回来是新的开始，把之前的走神时间带过来不公平。
+- **为什么选 `.directionUp`？** `.notification` 像来消息，会让人以为有通知、反而分心；`.click` 太轻，放下手腕可能感觉不到。`.directionUp` 是两下轻的。**真机上感觉如何没验证**，清单里第 14 项专门测。
+- 14 个单测：正好 3:00 触发、2:59 不触发、30 分钟只震 3 次（180 / 780 / 1380 秒）、宽限期内不清零、离座 / 校准 / 休息 / 关闭都不震、阈值 40 本身不算走神。
+
+**(c) 语法**
+- `public struct ... : Equatable, Sendable` + `mutating func update(_:) -> Bool`：值类型状态机，测试里 `var n = DistractionNudge()` 直接喂。
+- `extension Comparable { func clamped(to:) }`：设置值越界时夹回范围。
+- `UserDefaults.object(forKey:) == nil ? 默认值 : integer(forKey:)`：`integer` 对不存在的键返回 0，不能直接当默认值。
+- `@AppStorage("nudge.enabled")`：SwiftUI 直接绑 UserDefaults，设置页和 `AppSettings` 读同一个键。
+
+### 25. 专注模式和目标：`SessionPlan.swift`（Core）
+
+**(a) 骨架**
+- `SessionMode`：`.free`（v1 的行为）/ `.pomodoro`。`PomodoroSettings` 默认 25/5，工作至少 5 分钟。
+- `PomodoroTimer`：
+  - `phase(atElapsed:)` 是纯函数：`elapsed / (工作+休息)` 得到第几轮，再看落在工作段还是休息段。
+  - `update(now:)` 记住上一个阶段，变了就返回 `.breakStarted(cycle)` / `.workStarted(cycle)`，用来震动。
+- `SessionPlan`（模式 + 时长 + 目标分钟）存进存档；`FocusSample.onBreak` 标记休息的秒。
+- `SessionStats`：专注秒数 / 分钟数（分数 ≥ 70）、最长连续专注、`GoalResult`。
+- 手表端：休息时**不调用** `engine.tick`（不打分、不推进校准、不计离座），样本照记；走路事件先存在 `activityAwayDuringBreak`，休息结束再交给离座状态机；AI 判断也跳过休息。
+
+**(b) 为什么**
+- **为什么用墙上时间算阶段，而不是数 tick？** 手表放下手腕时 `Timer` 可能被系统推迟，数 tick 会越走越慢；用 `now - start` 算，醒来那一刻直接就是正确阶段。测试里用一个假时钟（`FakeClock`）喂 `Date`，61 分钟一秒一秒推进，断言正好 4 次切换。
+- **为什么睡太久只报最后一次切换？** 如果手表睡了 56 分钟一下跨过三段，醒来连震三下很蠢。`update` 只比较「上次的阶段」和「现在的阶段」，天然只有一个事件。
+- **为什么休息时离座不算？** 休息本来就该起来走走；把它算成离座，结束页的离座次数就失真了。
+- **为什么「专注分钟」= 分数 ≥ 70 的秒数 / 60？** 和已有的「心流占比」同一个定义，不发明新口径。
+- **最长连续**：离座、休息、校准（没有分数）都打断连续，因为那段时间你确实不在专注。
+- 旧存档兼容：`plan` 和 `onBreak` 都是可选的，v1 的 JSON 照样能解析（有单测）。
+
+**(c) 语法**
+- `enum Event: Equatable { case breakStarted(cycle: Int) }`：带关联值的枚举；`switch event { case .breakStarted?: ... case nil: }` 匹配可选枚举。
+- `Int(t / cycleLength)`：向下取整得到第几轮。
+- `@Published private(set) var pomodoroPhase`：外面只读、里面可写。
+- 模拟器专用参数 `-demoPomodoroOffset 1480`：把番茄钟开始时间往前拨，20 秒后就进休息，方便截图。
+
+### 26. 历史和统计：`FocusHistory.swift`（Core）+ `History.swift` + `HistoryView.swift`
+
+**(a) 骨架**
+- `SessionDigest`：把一次存档压成「每分钟一个桶」：`MinuteBucket(start: UTC 整分钟, scored, focused)`。1 小时 = 60 个桶，而不是 3600 条样本。
+- `FocusHistory.summary(digests, now, calendar, dailyGoal)`：今天的分钟数、最近 7 天（含 0 分钟的天）、连续达标天数、一天中最专注的小时。
+- `DigestStore`：摘要缓存在 `Application Support/Flowbeat/digests.json`；`refresh` 只解析新存档、删掉已删存档的摘要。
+- 手表端：开始页「历史 · 今天 n 分钟」、历史页（今天进度环 + 连续天数、Swift Charts 7 天柱状图 + 目标虚线、最佳时段）、设置里每日目标（默认 60）。每次存档后刷新。
+
+**(b) 为什么**
+- **核心设计：桶用绝对时间，「哪一天」留到显示时用当时的 Calendar 算。**
+  - 跨午夜的专注按每一秒自己的时间分到两天（23:40–00:20 → 20 + 20）；
+  - 换时区后「今天」按新时区重新划分，不用改任何文件（同一份数据在洛杉矶是 3 月 1 日、在上海是 3 月 2 日，有单测）；
+  - 印度 UTC+5:30 这种半小时时区也对，因为桶是整分钟。
+- **为什么往前推一天用 `calendar.date(byAdding: .day, value: -1)` 而不是减 86400 秒？** 夏令时那天只有 23 或 25 小时，减 86400 秒会落到前一天的 23:00 或后一天的 01:00，`startOfDay` 就错了。单测专门测了美国 2027-03-14 那周。
+- **连续天数为什么「今天没达标不算断」？** 早上 9 点打开 app，今天还没开始，显示「连续 0 天」很打击人；从昨天往前数才合理。
+- **最佳时段为什么用比例 + 至少 10 分钟？** 只用总分钟数，结果就是「你最常工作的时间」而不是「你最专注的时间」；只用比例，某个小时偶然 2 分钟全专注就赢了。
+- **为什么要摘要缓存？** 手表上每次打开历史页都解析所有存档（1 小时 ≈ 3600 条样本）太浪费；摘要可以随时从存档重建，删掉也不丢数据。
+- 14 个单测。
+
+**(c) 语法**
+- `calendar.startOfDay(for:)`、`calendar.component(.hour, from:)`、`Calendar` 的 `timeZone` 属性：测试里注入不同时区的 Calendar，而不是改系统时区。
+- `Dictionary(_, uniquingKeysWith:)`、`default:` 下标（`days[d, default: 0] += x`）。
+- Swift Charts：`BarMark(x: .value("Day", date, unit: .day), y: ...)`、`RuleMark(y:)`、`.chartXAxis { AxisMarks(values: .stride(by: .day)) }`、`.dateTime.weekday(.narrow)`。
+- `Task.detached(priority: .utility)` 在后台解析，`await MainActor.run` 回主线程发布结果。
+- `ScrollViewReader` + `.task(id:)`：数据出来后滚到底（模拟器截图用 `-scrollBottom`）。
+
+### 27. 表盘复杂功能 / 智能叠放：`FlowbeatWidgets/`（WidgetKit 扩展）+ `WidgetSnapshot.swift`（Core）
+
+**(a) 骨架**
+- `project.yml` 新 target `FlowbeatWidgets`（`type: app-extension`，`NSExtensionPointIdentifier = com.apple.widgetkit-extension`），两个手表 target 都依赖它，构建后在 `Flowbeat.app/PlugIns/FlowbeatWidgets.appex`。
+- 四种尺寸：`accessoryCircular`（容量环 + 分钟数）、`accessoryRectangular`（分钟 / 目标 + 进度条 + 连续天数）、`accessoryInline`、`accessoryCorner`。点一下打开 app。
+- 数据：手表 app 把 `WidgetSnapshot`（最近 60 天、每 15 分钟一个桶 + 每日目标）写成 App Group 容器里的 `widget-snapshot.json`；小组件读它，用和历史页**同一个** `FocusHistory.summary` 现算「今天」。
+- 时间线：现在一条 + 下一个当地午夜一条（今天归零），`policy: .atEnd`。专注结束、改每日目标时，app 调 `WidgetCenter.shared.reloadAllTimelines()`，而且只在快照内容真的变了时才调。
+- App Group：`group.com.xungirl.flowbeat`，两个 entitlements 文件里都有；**要在开发者后台用 Team ID 注册**。
+
+**(b) 为什么**
+- **为什么不直接存「今天 42 分钟」？** 小组件要自己判断「今天」：过了午夜要显示 0、换了时区今天也会变，而那时 app 不一定在运行。存原始桶，让小组件现算，就和历史页永远一致。
+- **为什么桶是 15 分钟？** 世界上所有时区偏移都是 15 分钟的整数倍（尼泊尔 UTC+5:45），所以 15 分钟的桶不会跨两个当地日期；比按分钟存小 15 倍。有一个尼泊尔跨午夜的单测。
+- **为什么只放 now + 午夜两条？** 数据只在专注结束时变，那时 app 会主动 reload；中间不需要每分钟刷新，省电，也不浪费 WidgetKit 每天有限的刷新预算。
+- **为什么用文件而不是 `UserDefaults(suiteName:)`？** 用 App Group 的 UserDefaults 属于需要声明理由的 API（1C8F.1）；一个普通 JSON 文件不在那份清单里，隐私清单更简单，而且快照本来就是一整块 JSON。
+- **模拟器里踩到的事实：** 不签名的构建（`CODE_SIGNING_ALLOWED=NO`）根本没有 entitlements，`containerURL(forSecurityApplicationGroupIdentifier:)` 返回 nil。所以代码在 nil 时什么都不写、小组件显示 0，不崩。用 ad-hoc 签名（`CODE_SIGN_IDENTITY=-`）构建后，快照确实写进了模拟器的 App Group 容器，`pluginkit` 也列出了这个扩展。
+- **没验证的**：表盘上的真实渲染（系统会用 vibrant / tinted 着色）。截图里的小组件是画在 app 里的（`-widgetGallery`，模拟器专用），不是真表盘。
+- XcodeGen 的坑：小组件 target 的源码目录包含 `Shared/`，手表 app 也单独引用 `Shared/`，Xcode 报「一个文件属于多个 group」。解决：小组件 target 里 `excludes: ["Shared/**"]` 再单独加 `Shared`。
+
+**(c) 语法**
+- `TimelineProvider` 三个方法：`placeholder`、`getSnapshot`（表盘编辑器预览，`context.isPreview`）、`getTimeline`。
+- `StaticConfiguration(kind:provider:)` + `.supportedFamilies([...])` + `.containerBackground(.fill.tertiary, for: .widget)`。
+- `Gauge(value:) { } currentValueLabel: { }.gaugeStyle(.accessoryCircularCapacity)`、`.widgetAccentable()`、`.widgetLabel { }`、`.widgetCurvesContent()`（角落样式）。
+- `@main struct ...: WidgetBundle`：扩展的入口。
+- `FileManager.containerURL(forSecurityApplicationGroupIdentifier:)`。
+
+### 28. App Intents：`FocusIntents.swift`
+
+**(a) 骨架**
+- 三个 `AppIntent`：`StartFocusIntent`、`StartPomodoroIntent`（`openAppWhenRun = true`）、`StopFocusIntent`（不开 app）。都调用 `FocusSession.shared`（app 和 intent 共用一个实例）。
+- `AppShortcutsProvider`：每个 intent 配几句话（必须包含 `\(.applicationName)`），装好就能对 Siri 说、在「快捷指令」里看到，不需要用户自己建。中文说法在 `AppShortcuts.xcstrings`（「在${applicationName}开始专注」）。
+- 返回 `ProvidesDialog`：已经在专注 / 没在专注 / 没能开始 / 「已保存，专注 n 分钟」。
+- watchOS 11 双指互点：`handGestureShortcut(.primaryAction)` 加在专注中第二页的「专注」标签按钮上；watchOS 10 上用 `if #available` 跳过。
+
+**(b) 为什么**
+- **为什么开始要打开 app，结束不用？** HealthKit workout 必须从前台开始，用户也应该看到校准倒计时；结束时 app 本来就因为 workout 在后台运行，可以直接保存。
+- **操作按钮（Ultra）为什么不用 `StartWorkoutIntent`？** 那是给体能训练 app 的入口。Flowbeat 只是借用 Mind & Body workout 读心率，不是体能训练 app，硬占这个入口在审核上说不过去（2.5.4 已经是最大风险了，不想再加一个）。Ultra 用户可以在「设置 → 操作按钮 → 快捷指令」里选「开始专注」，效果一样，零额外代码。
+- **为什么双指互点给「专注」标签，而不是「结束」？** 双指互点可能误触，误结束一次专注代价很大；误标一次「专注」代价很小，而且这正是最常用、最想不碰屏幕就做的操作。
+- **验证到哪一步：** 构建产物里 `Metadata.appintents/extract.actionsdata` 列出了 3 个 action 和 3 个 App Shortcut；**没有真的用 Siri 触发过**（模拟器里没法自动化，要真机）。
+
+**(c) 语法**
+- `static let title: LocalizedStringResource`、`IntentDescription`、`static let openAppWhenRun`。
+- `@MainActor func perform() async throws -> some IntentResult & ProvidesDialog`、`.result(dialog: IntentDialog("..."))`。
+- `AppShortcut(intent:phrases:shortTitle:systemImageName:)`，`static var appShortcuts` 用 result builder 列出。
+- `if #available(watchOS 11.0, *) { handGestureShortcut(.primaryAction) } else { self }`，包成 `@ViewBuilder` 的 View 扩展。
+
+### 29. 用标签做的个性化：`PersonalModel.swift`（Core）
+
+**(a) 骨架**
+- 特征 `FocusFeatures`（标签前 60 秒，只算坐着、不在休息的秒，少于 20 秒不算）：手腕静止占比、平均动作、平均心率 − 本次基线、HRV（有就用）。
+- `LabeledFeatures.extract(from: SessionRecord)`：从存档里找出每个标签，用它之前 60 秒算特征；基线 = 校准期心率中位数（和 `FocusScorer` 同一个算法）。存进 `SessionDigest.labels`，所以训练数据跟着摘要缓存走。
+- `PersonalModel.train`：逻辑回归。特征先标准化（训练集的均值 / 标准差），缺失值填 0（= 均值）；权重从 0 开始，全量梯度下降 400 次，学习率 0.5，L2 = 0.01。
+- 启用条件：「专注」和「走神」标签**各**至少 8 个，否则返回 nil，app 只用规则分。
+- 混合：显示分 = 0.5 × 规则分 + 0.5 × 100 × p(专注)。启用时圆环里显示「个性化」，设置页显示标签数和影响最大的三个特征（↑ = 让「专注」更可能）。
+- 每次专注开始用所有存档的标签训练；专注中每打一个标签马上重新训练（几百个样本 × 400 次迭代，毫秒级）。
+
+**(b) 为什么**
+- **为什么是逻辑回归，不是更强的模型？** 一个人一周可能只有几十个标签；深一点的模型只会背下这几十个点。逻辑回归每个特征一个权重，正负和大小都能直接给用户看（可解释），这是「为什么这次分数低」的答案。
+- **为什么手写梯度下降，不用 Create ML？** Create ML 不能在手表上训练；Core ML 的 on-device update 要先有一个可更新的模型文件，太重。四个特征的逻辑回归，40 行 Swift 就够，而且 FlowbeatCore 在 macOS 上就能测。
+- **为什么要求确定性？** 权重从 0 开始、全量梯度（不是随机小批量）、固定迭代次数，所以同样的标签永远训出**完全一样**的权重：单测能断言 `a == b`，用户看到的分数也不会每次重开 app 就变。
+- **为什么要标准化？** 静止占比在 0–1，心率差在 −5–20，不标准化的话梯度被心率那一列主导，学习率很难调；标准化后权重大小还能互相比较（设置页按绝对值排序）。
+- **为什么要 L2？** 可分的数据上，没有正则的逻辑回归权重会一直涨（越来越自信），L2 把它拉住。
+- **为什么各 8 个才启用、为什么混合 50/50？** 都是拍的数。8 个是「不至于只记住两三次」的下限；50/50 是不让一个没验证过的模型完全接管。**这些都没在真实用户上验证过**，README 里明说了。
+- **HRV**：上架版不申请 HRV 权限（数据最小化），所以那一列永远缺失 → 标准化后全是 0 → 梯度为 0 → 权重停在 0，不影响预测（有单测）。
+- 9 个单测（合成数据，自带确定性的 LCG 随机数）：可分数据训练准确率 100%、另一个种子的 60 个新样本 ≥ 95%、权重方向符合直觉、标签不够返回 nil、两次训练完全相同、缺失心率时混合公式正确、有 HRV 时会用上、从存档提取特征和基线。
+
+**(c) 语法**
+- `1 / (1 + exp(-z))`（sigmoid）、`zip(a, b).reduce(0) { $0 + $1.0 * $1.1 }`（点积）。
+- `[Double?]` 表示可能缺失的特征，`x.map { ($0 - m) / s } ?? 0` 填缺失值。
+- 泛型函数 `make<S: Sequence>(from: S, ...) where S.Element == FocusSample`：既能传数组也能传 `ArraySlice`（`samples.suffix(60)`）。
+- `MainActor.assumeIsolated { }`：在确定是主线程、但编译器不知道的地方（按钮回调里的 `mark`）调用 `@MainActor` 方法。
+
 ---
 
-## 第六部分：面试题和回答
+## 第七部分：面试题和回答
 
 （数字的出处见 README 的 Key metrics 表。）
 
@@ -495,7 +650,7 @@ watchOS 平时大约几分钟才测一次心率，而且你放下手腕后 app �
 **现在没有验证。** 所有数据都来自模拟器的假传感器。我的计划是：
 1. 真手表上收集带标签的 session（专注 / 走神按钮就是为这个设计的，每秒样本都存了）。
 2. 把标签当 ground truth，算规则分和 LLM 判断的准确率 / F1，以及阈值 70 附近的 ROC。
-3. 用这些数据调阈值，或用 Create ML 训一个个人模型，留出法评估。
+3. 用这些数据调阈值；手表上的个性化逻辑回归（第 29 节）已经写好了，但要按 session 留出来评估（别的 session 训练、这个 session 测试），不能只看训练准确率。
 4. 可选：对照外部任务指标，比如番茄钟里完成的工作量，或者自评问卷。
 
 难点在于标签稀疏、有偏差（人通常在发现自己走神时才点），以及心率受咖啡、运动、温度影响。
@@ -538,6 +693,7 @@ Swift 和 Python 两边各定义一遍数据结构，字段名对不上时，Swi
 5. Claude provider 写了但没在线跑过（没有 key）。
 6. 后端没部署，没有 HTTPS 和限流（v1 上架版不联网，所以这条不挡上架）。
 7. 上架相关：App Review 可能不接受「专注」场景用 workout 后台模式（2.5.4，Q24）；手表截图尺寸和 watch-only app 的 bundle ID 在 App Store Connect 里怎么填，本地都验证不了。
+8. 新功能（第六部分）：震动的手感、复杂功能在真表盘上的样子、Siri 能不能识别说法、个性化模型在真实标签上好不好，全都没验证；App Group 还要用 Team ID 注册。
 
 **Q20. 如果再给你两周，你先做什么？**
 第一周：
@@ -546,7 +702,7 @@ Swift 和 Python 两边各定义一遍数据结构，字段名对不上时，Swi
 - 测 WatchConnectivity。
 
 第二周：
-- 用这些标签算规则分和 LLM 的准确率；
+- 用这些标签算规则分、个性化模型（按 session 留出）和 LLM 的准确率；
 - 调阈值（离线队列持久化已经做完了，见第 21 节）；
 - 后端加限流，部署到一个有 HTTPS 的地方。
 
@@ -600,3 +756,42 @@ Swift 和 Python 两边各定义一遍数据结构，字段名对不上时，Swi
 - 审核面翻倍。
 
 配置上两种都支持（两个手表 target，`WKWatchOnly` 和伴侣键不能共存），等真机上把同步跑通了，v1.1 再加。
+
+**Q28. 走神提醒怎么做到「有用但不烦」？（触感 UX）**
+三条规则加一个宽限期：
+- 连续走神满 3 分钟才震（不是一低就震）；
+- 两次之间至少隔 10 分钟，而且震完要重新连续走神 3 分钟；
+- 走路、校准、番茄钟休息时永远不震，回来后重新计时；
+- 分数回到 40 以上要连续 15 秒才算「回来了」，否则平滑后的分数在阈值附近抖一下就清零，永远提醒不到。
+
+触感选 `.directionUp`（两下轻的），不用 `.notification`，因为后者像来消息，会让人以为有通知、更分心。默认开、可以关、时长可调。状态机 14 个单测，比如 30 分钟一直走神只震 3 次（第 180 / 780 / 1380 秒）。**诚实的部分**：震动在真手表上够不够明显、会不会烦，没测过，提交清单第 14 项专门测。
+
+**Q29. WidgetKit 的时间线是怎么设计的？为什么不每分钟刷新？**
+小组件不是一直运行的视图，而是系统按「时间线」提前要好的一串快照。我给两条：现在一条、下一个当地午夜一条（那一刻「今天」归零），`policy: .atEnd` 让系统午夜后再来要。数据只在专注结束时变，那时 app 主动 `reloadAllTimelines()`，而且只在快照内容真变了时才调，因为 reload 有每天的预算。每分钟刷新既耗电又浪费预算，还没有新信息。时间线的日期计算是纯函数（`WidgetSnapshot.timelineDates`），有单测：洛杉矶 21:00 的时间线第二条正好是第二天 0:00，那一条显示 0 分钟、连续天数不断。
+
+**Q30. App Group 是什么？为什么需要？要注意什么？**
+小组件是单独的进程（app extension），读不到手表 app 的沙盒。App Group 是同一个开发者账号下几个 target 共享的一个容器目录：手表 app 写 `widget-snapshot.json`，小组件读。要注意：
+- 两边的 entitlements 都要写同一个 `group.` 标识，**并且要在开发者后台用 Team ID 注册**（现在账号还没批，清单里写了步骤）；
+- 不签名的构建没有 entitlements，`containerURL` 是 nil：代码要能处理（不写、显示 0、不崩）。我在模拟器里用 ad-hoc 签名验证过文件确实写进了 App Group 容器；
+- 隐私：用 App Group 的 `UserDefaults(suiteName:)` 属于要声明理由的 API（1C8F.1），我用普通文件，就不用声明；数据只在同一块手表上的 app 和它自己的小组件之间共享，不算「收集」。
+
+**Q31. App Intents 怎么接的？Ultra 的操作按钮呢？**
+三个 `AppIntent`（开始专注、开始番茄钟、结束专注）+ 一个 `AppShortcutsProvider`，装好就能对 Siri 说「Start focus in Flowbeat」/「在心流开始专注」，也会出现在「快捷指令」里，不需要 SiriKit entitlement。开始的两个 `openAppWhenRun = true`，因为 workout 要从前台开始；结束不开 app，因为专注中 app 本来就在后台跑。app 和 intent 共用 `FocusSession.shared`，所以 intent 改了状态，界面立刻跟着变。操作按钮：我**没有**用 `StartWorkoutIntent`，因为那是给体能训练 app 的，Flowbeat 不是；Ultra 用户在「设置 → 操作按钮 → 快捷指令」里选「开始专注」就行。双指互点（watchOS 11）给了「专注」标签按钮，不给「结束」，因为误触结束的代价太大。**没用 Siri 真触发过**，只确认了构建产物里的 intent 元数据。
+
+**Q32. 你在手表上训练了一个模型？讲讲。**
+逻辑回归，四个特征：手腕静止占比、平均动作、心率 − 基线、HRV（有才用）。训练数据是用户自己点的「专注 / 走神」标签，每个标签取它之前 60 秒的特征。特征标准化，缺失值填均值；权重从 0 开始、全量梯度下降 400 次、L2 = 0.01，纯 Swift，不用 Create ML。两类各满 8 个标签才启用，然后显示分 = 规则分和模型概率各一半；圆环里显示「个性化」，设置页列出影响最大的特征和方向。为什么这么简单：数据少（几十个点）、要可解释、要确定（同样的标签训出完全一样的权重，单测直接比较）、要离线。合成数据上的单测：可分的数据训练准确率 100%，另一个随机种子的 60 个新样本 ≥ 95%，标签不够时退回规则分。**最重要的限制**：没在任何真实用户上验证过；标签是主观感受，不是专注的「真值」；合成数据可分不代表真实数据可分。
+
+**Q33. 统计里的时区和日期边界你是怎么处理的？**
+存的时候不决定「哪一天」：每分钟一个桶，桶的时间是绝对时间（UTC 整分钟）。显示时用当前的 `Calendar`（带时区）把桶分到当地日期和小时。好处：
+- 跨午夜的专注按每一秒自己的时间分到两天，而不是全算在开始那天；
+- 出差换时区，「今天」自动按新时区算，不用迁移数据；
+- 半小时、45 分钟的时区（印度、尼泊尔）也对：分钟桶天然对齐，小组件的 15 分钟桶也对齐（所有时区偏移都是 15 分钟的倍数）；
+- 往前推一天用 `calendar.date(byAdding: .day, value: -1)`，不减 86400 秒，因为夏令时那天是 23 或 25 小时。
+
+测试里注入不同时区的 `Calendar`（洛杉矶、上海、UTC、加尔各答、加德满都、纽约夏令时那周），不改系统时区，所以结果在任何机器、任何 CI 上都一样。
+
+**Q34. 这次加了六个功能，你怎么保证没破坏 v1 的「不联网」？**
+- 新代码全是本地计算 + 本地文件，没有任何 URLSession；
+- 小组件是新的二进制，所以我改了 `verify_release_offline.sh`，让它也扫 `FlowbeatWidgets`（现在 Release 扫 2 个 Mach-O、Debug 扫 6 个），Release 仍是 0/6 个后端标记；
+- 隐私清单只更新了说明（UserDefaults 仍是 CA92.1，App Group 用文件不用 suite），小组件有自己的清单，App Privacy 仍是 Data Not Collected；
+- 每个功能单独 commit，CI 每次 push 跑全套。
