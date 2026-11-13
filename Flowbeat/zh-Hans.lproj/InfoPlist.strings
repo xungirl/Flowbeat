@@ -1,2 +1,12 @@
+/* 主屏幕上的名字 */
 "CFBundleDisplayName" = "心流";
 "CFBundleName" = "心流";
+
+/* HealthKit 读取：心率 */
+"NSHealthShareUsageDescription" = "读取心率，用来估计你是否处于专注状态。数据只保存在你的 Apple Watch 上。";
+
+/* HealthKit 写入：开启专注时段需要的体能训练（结束时丢弃） */
+"NSHealthUpdateUsageDescription" = "开启专注时段需要启动一个「身心」类体能训练以持续读取心率（结束时不会保存）。";
+
+/* 运动与健身：识别走动 */
+"NSMotionUsageDescription" = "识别你是否起身走动，走动时暂停打分，不算作走神。";

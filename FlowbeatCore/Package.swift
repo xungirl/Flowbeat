@@ -6,6 +6,8 @@ import PackageDescription
 
 let package = Package(
     name: "FlowbeatCore",
+    // iPhone 视图（FlowbeatPhoneUI）的文案：英文是开发语言，中文在 Resources/zh-Hans.lproj
+    defaultLocalization: "en",
     platforms: [.watchOS(.v10), .iOS(.v17), .macOS(.v14)],
     products: [
         .library(name: "FlowbeatCore", targets: ["FlowbeatCore"]),
@@ -15,7 +17,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "FlowbeatCore"),
-        .target(name: "FlowbeatPhoneUI", dependencies: ["FlowbeatCore"]),
+        .target(name: "FlowbeatPhoneUI", dependencies: ["FlowbeatCore"], resources: [.process("Resources")]),
         // swift run render-snapshots <session.json> <输出目录>：把 iPhone 视图渲染成 PNG
         .executableTarget(name: "render-snapshots", dependencies: ["FlowbeatCore", "FlowbeatPhoneUI"]),
         .testTarget(

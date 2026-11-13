@@ -56,14 +56,14 @@ final class SessionStore: ObservableObject {
 // MARK: - WatchConnectivity
 
 final class WatchReceiver: NSObject, ObservableObject, WCSessionDelegate {
-    @Published private(set) var status = "正在连接 Apple Watch…"
+    @Published private(set) var status = String(localized: "Connecting to Apple Watch…")
     @Published private(set) var received = 0
     private weak var store: SessionStore?
 
     func start(store: SessionStore) {
         self.store = store
         guard WCSession.isSupported() else {
-            status = "这台设备不支持 WatchConnectivity"
+            status = String(localized: "This device doesn't support Apple Watch connectivity.")
             return
         }
         WCSession.default.delegate = self
@@ -73,13 +73,13 @@ final class WatchReceiver: NSObject, ObservableObject, WCSessionDelegate {
     func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState, error: Error?) {
         let text: String
         if let error {
-            text = "连接失败：\(error.localizedDescription)"
+            text = String(localized: "Connection failed: \(error.localizedDescription)")
         } else if !session.isPaired {
-            text = "没有配对的 Apple Watch"
+            text = String(localized: "No paired Apple Watch")
         } else if !session.isWatchAppInstalled {
-            text = "手表上还没装 Flowbeat"
+            text = String(localized: "Flowbeat isn't installed on your Apple Watch yet")
         } else {
-            text = "Apple Watch 已连接 · 结束专注后自动同步"
+            text = String(localized: "Apple Watch connected · sessions sync when you end a focus session")
         }
         DispatchQueue.main.async { self.status = text }
     }
@@ -94,7 +94,7 @@ final class WatchReceiver: NSObject, ObservableObject, WCSessionDelegate {
                 self.store?.reload()
             }
         } catch {
-            DispatchQueue.main.async { self.status = "收到的存档无法解析" }
+            DispatchQueue.main.async { self.status = String(localized: "A received session couldn't be read") }
         }
     }
 
@@ -127,12 +127,12 @@ struct SessionListView: View {
                     Label(receiver.status, systemImage: "applewatch")
                 }
             }
-            .navigationTitle("Flowbeat")
+            .navigationTitle(Text(verbatim: "Flowbeat"))
             .navigationDestination(for: SessionStore.Item.self) { item in
                 ScrollView {
                     SessionDetailContent(record: item.record, isSample: item.isSample).padding()
                 }
-                .navigationTitle(item.record.samples.first.map { $0.t.formatted(date: .abbreviated, time: .shortened) } ?? "专注")
+                .navigationTitle(item.record.samples.first.map { $0.t.formatted(date: .abbreviated, time: .shortened) } ?? String(localized: "Session"))
                 .navigationBarTitleDisplayMode(.inline)
             }
             .refreshable { store.reload() }

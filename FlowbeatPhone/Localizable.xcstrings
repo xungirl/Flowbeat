@@ -1,0 +1,86 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "A received session couldn't be read": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收到的存档无法解析"
+          }
+        }
+      }
+    },
+    "Apple Watch connected · sessions sync when you end a focus session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Watch 已连接 · 结束专注后自动同步"
+          }
+        }
+      }
+    },
+    "Connecting to Apple Watch…": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在连接 Apple Watch…"
+          }
+        }
+      }
+    },
+    "Connection failed: %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接失败：%@"
+          }
+        }
+      }
+    },
+    "Flowbeat isn't installed on your Apple Watch yet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手表上还没装心流"
+          }
+        }
+      }
+    },
+    "No paired Apple Watch": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有配对的 Apple Watch"
+          }
+        }
+      }
+    },
+    "Session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注"
+          }
+        }
+      }
+    },
+    "This device doesn't support Apple Watch connectivity.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这台设备不支持 WatchConnectivity"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

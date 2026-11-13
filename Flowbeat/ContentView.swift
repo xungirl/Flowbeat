@@ -84,15 +84,15 @@ struct StartView: View {
             }
 
             VStack(spacing: 0) {
-                Text("心流").font(.system(.title2, design: .rounded, weight: .bold))
-                Text("FLOWBEAT").font(.system(size: 10, weight: .semibold)).tracking(3)
+                Text("Flowbeat").font(.system(.title2, design: .rounded, weight: .bold))
+                Text(verbatim: "FLOWBEAT").font(.system(size: 10, weight: .semibold)).tracking(3)
                     .foregroundStyle(.secondary)
             }
 
             Button {
                 Task { await session.start() }
             } label: {
-                Label("开始专注", systemImage: "play.fill").font(.headline)
+                Label("Start Focus", systemImage: "play.fill").font(.headline)
             }
             .buttonStyle(.borderedProminent)
             .tint(.mint)
@@ -170,7 +170,8 @@ struct MetricsPage: View {
             .font(.system(.footnote, design: .rounded, weight: .medium))
             .padding(.horizontal, 4)
 
-            AILine()
+            // AI 那一行只在 AI build（Debug）里出现；上架版没有 AI，也不联网
+            if session.aiEnabled { AILine() }
         }
         .containerBackground(background.gradient.opacity(0.28), for: .tabView)
     }
@@ -183,8 +184,8 @@ struct MetricsPage: View {
                         .font(.system(size: 30))
                         .foregroundStyle(.cyan)
                         .symbolEffect(.pulse, options: .repeating)
-                    Text("离座中").font(.system(.footnote, weight: .semibold))
-                    Text("坐下自动继续").font(.system(size: 9)).foregroundStyle(.secondary)
+                    Text("Away").font(.system(.footnote, weight: .semibold))
+                    Text("Resumes when you sit").font(.system(size: 9)).foregroundStyle(.secondary)
                 }
             }
         } else if session.phase == .calibrating {
@@ -195,7 +196,7 @@ struct MetricsPage: View {
                         .font(.system(size: 40, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .contentTransition(.numericText())
-                    Text("校准中 · 请静坐").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Text("Calibrating · sit still").font(.system(size: 10)).foregroundStyle(.secondary)
                 }
             }
         } else {
@@ -213,9 +214,9 @@ struct MetricsPage: View {
         }
     }
 
-    private var stateText: String {
-        guard let s = session.score else { return "专注指数" }
-        return s >= 70 ? "心流中" : (s >= 40 ? "有点分心" : "走神了")
+    private var stateText: LocalizedStringKey {
+        guard let s = session.score else { return "Focus score" }
+        return s >= 70 ? "In flow" : (s >= 40 ? "A bit distracted" : "Off track")
     }
 
     private var background: Color {
@@ -250,7 +251,8 @@ struct AILine: View {
         if session.pendingJudgments > 0, let e = session.aiError { return e }
         if let j = session.aiJudgment { return j.reason }
         if let e = session.aiError { return e }
-        return session.phase == .calibrating ? "AI 等待校准完成" : "AI 正在观察…"
+        return session.phase == .calibrating ? String(localized: "AI waits for calibration")
+                                             : String(localized: "AI is watching…")
     }
 
     private var color: Color {
@@ -268,7 +270,7 @@ struct MotionIndicator: View {
     let motion: Double
 
     private var level: Int { motion < 0.03 ? 1 : (motion < 0.10 ? 2 : 3) }
-    private var text: String { ["稳", "小动", "活跃"][level - 1] }
+    private var text: LocalizedStringKey { ["Still", "Slight", "Active"][level - 1] }
     private var color: Color { [Color.mint, .yellow, .orange][level - 1] }
 
     var body: some View {
@@ -288,37 +290,46 @@ struct MotionIndicator: View {
 
 struct ControlsPage: View {
     @EnvironmentObject var session: FocusSession
+    /// 刚打的标签（"focused" / "distracted"），1.5 秒后清空
     @State private var marked: String?
 
     var body: some View {
         VStack(spacing: 8) {
-            Text(marked.map { "已标记：\($0)" } ?? "此刻的状态是？")
+            Text(markedText)
                 .font(.footnote)
                 .foregroundStyle(marked == nil ? .secondary : .primary)
                 .animation(.default, value: marked)
 
             HStack(spacing: 6) {
-                labelButton("专注", icon: "brain.head.profile", color: .mint, tag: "focused")
-                labelButton("走神", icon: "cloud.fog.fill", color: .orange, tag: "distracted")
+                labelButton("Focused", icon: "brain.head.profile", color: .mint, tag: "focused")
+                labelButton("Distracted", icon: "cloud.fog.fill", color: .orange, tag: "distracted")
             }
 
             Button(role: .destructive) {
                 Task { await session.stop() }
             } label: {
-                Label("结束", systemImage: "stop.fill")
+                Label("End", systemImage: "stop.fill")
             }
             .tint(.red)
         }
         .containerBackground(Color.gray.gradient.opacity(0.2), for: .tabView)
     }
 
-    private func labelButton(_ title: String, icon: String, color: Color, tag: String) -> some View {
+    private var markedText: LocalizedStringKey {
+        switch marked {
+        case "focused": return "Marked: Focused"
+        case "distracted": return "Marked: Distracted"
+        default: return "How are you right now?"
+        }
+    }
+
+    private func labelButton(_ title: LocalizedStringKey, icon: String, color: Color, tag: String) -> some View {
         Button {
             session.mark(tag)
             WKInterfaceDevice.current().play(.click)
-            marked = title
+            marked = tag
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                if marked == title { marked = nil }
+                if marked == tag { marked = nil }
             }
         } label: {
             VStack(spacing: 2) {
@@ -345,27 +356,28 @@ struct SummaryView: View {
                         Text(session.averageScore.map { "\(Int($0))" } ?? "--")
                             .font(.system(size: 34, weight: .bold, design: .rounded))
                             .foregroundStyle(Theme.color(for: session.averageScore))
-                        Text("平均专注").font(.system(size: 10)).foregroundStyle(.secondary)
+                        Text("Average focus").font(.system(size: 10)).foregroundStyle(.secondary)
                     }
                 }
                 .frame(width: 96, height: 96)
 
                 VStack(spacing: 0) {
-                    stat("clock.fill", .white, "时长", timeString(session.elapsed))
-                    stat("sparkles", .mint, "心流占比", session.focusedRatio.map { "\(Int($0 * 100))%" } ?? "--")
-                    stat("figure.walk", .cyan, "离座", "\(session.awayCount) 次 · \(timeString(session.awaySeconds))")
-                    stat("shoeprints.fill", .orange, "步数", "\(session.steps)")
+                    stat("clock.fill", .white, "Duration", Text(verbatim: timeString(session.elapsed)))
+                    stat("sparkles", .mint, "Time in flow",
+                         Text(verbatim: session.focusedRatio.map { "\(Int($0 * 100))%" } ?? "--"))
+                    stat("figure.walk", .cyan, "Away", Text("\(session.awayCount)× · \(timeString(session.awaySeconds))"))
+                    stat("shoeprints.fill", .orange, "Steps", Text(verbatim: "\(session.steps)"))
                 }
                 .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
 
                 aiReviewCard
 
-                Button("完成") { session.reset() }
+                Button("Done") { session.reset() }
                     .buttonStyle(.borderedProminent)
                     .tint(.mint)
             }
         }
-        .navigationTitle("本次总结")
+        .navigationTitle("Summary")
         .containerBackground(Theme.color(for: session.averageScore).gradient.opacity(0.22), for: .navigation)
     }
 
@@ -373,11 +385,11 @@ struct SummaryView: View {
         if session.aiReviewLoading {
             HStack(spacing: 6) {
                 ProgressView().frame(width: 16, height: 16)
-                Text("AI 复盘中…").font(.footnote).foregroundStyle(.secondary)
+                Text("AI reviewing…").font(.footnote).foregroundStyle(.secondary)
             }
         } else if let r = session.aiReview {
             VStack(alignment: .leading, spacing: 6) {
-                Label("AI 复盘", systemImage: "sparkles")
+                Label("AI review", systemImage: "sparkles")
                     .font(.system(.footnote, weight: .semibold))
                     .foregroundStyle(.mint)
                 Text(r.summary).font(.footnote)
@@ -393,12 +405,12 @@ struct SummaryView: View {
         }
     }
 
-    private func stat(_ icon: String, _ color: Color, _ k: String, _ v: String) -> some View {
+    private func stat(_ icon: String, _ color: Color, _ k: LocalizedStringKey, _ v: Text) -> some View {
         HStack {
             Image(systemName: icon).foregroundStyle(color).frame(width: 18)
             Text(k).foregroundStyle(.secondary)
             Spacer()
-            Text(v).monospacedDigit()
+            v.monospacedDigit()
         }
         .font(.system(.footnote, design: .rounded))
         .padding(.horizontal, 10)

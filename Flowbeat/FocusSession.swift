@@ -41,7 +41,11 @@ final class FocusSession: NSObject, ObservableObject {
     private var tickTimer: Timer?
     private var pendingLabel: String?
 
-    // AI 判断（后端 + 大模型）。连不上后端时这些保持 nil，本地规则照常工作。
+    // AI 判断（后端 + 大模型）。只在 FLOWBEAT_AI（Debug）build 里会有值；
+    // Release 里 transport 是 nil，这些永远保持初始值，不发任何请求，本地规则照常工作。
+    /// 网络客户端：只能经过功能开关构造（AppFeatures.makeTransport），AI 关闭时是 nil
+    private let transport: (any JudgeTransport)? = AppFeatures.makeTransport()
+    var aiEnabled: Bool { transport != nil }
     @Published private(set) var aiJudgment: Judgment?
     @Published private(set) var aiReview: Review?
     @Published private(set) var aiReviewLoading = false
@@ -55,7 +59,8 @@ final class FocusSession: NSObject, ObservableObject {
     /// 最近 6 小时的 HRV（SDNN）读数。没授权 / 没读数时是空数组，摘要里就不带 HRV
     private var hrvSamples: [HRVSample] = []
     /// 所有判断请求都走这个队列：在线时等于直接发；连不上后端时排队，按 15 s → 30 s → … ≤ 5 min 退避重试，最多 30 条
-    private var sync = JudgeSync { try await AIClient.judge($0) }
+    /// AI 关闭时是 nil。
+    private var sync: JudgeSync?
     /// 还在排队等发送的窗口数（> 0 时 UI 显示「离线」）
     @Published private(set) var pendingJudgments = 0
 
@@ -63,23 +68,24 @@ final class FocusSession: NSObject, ObservableObject {
 
     func requestAuthorization() async -> Bool {
         guard HKHealthStore.isHealthDataAvailable() else {
-            await setError("这台设备不支持 HealthKit")
+            await setError(String(localized: "Health data isn't available on this device."))
             return false
         }
-        // HRV 是可选的：用户不给也能用，只是摘要里没有 hrv 字段
-        let read: Set<HKObjectType> = [HKQuantityType(.heartRate), HKQuantityType(.heartRateVariabilitySDNN)]
+        // 只读心率。HRV 只给 AI 判断用（可选，用户不给也能用），所以只有 AI build 才申请（数据最小化）
+        var read: Set<HKObjectType> = [HKQuantityType(.heartRate)]
+        if aiEnabled { read.insert(HKQuantityType(.heartRateVariabilitySDNN)) }
         let share: Set<HKSampleType> = [HKObjectType.workoutType()]
         do {
             try await healthStore.requestAuthorization(toShare: share, read: read)
             // 弹窗被关掉 / 点了不允许时，上面不会抛错，要自己再查一次
             guard healthStore.authorizationStatus(for: HKObjectType.workoutType()) == .sharingAuthorized else {
-                await setError("请允许「健康」权限：设置 → 健康 → 数据访问 → Flowbeat")
+                await setError(String(localized: "Allow Health access: Settings → Health → Apps → Flowbeat."))
                 return false
             }
             await MainActor.run { self.errorMessage = nil }
             return true
         } catch {
-            await setError("授权失败：\(error.localizedDescription)")
+            await setError(String(localized: "Couldn't request Health access: \(error.localizedDescription)"))
             return false
         }
     }
@@ -114,7 +120,7 @@ final class FocusSession: NSObject, ObservableObject {
 
             await MainActor.run { self.beginSession(at: now) }
         } catch {
-            await setError("启动失败：\(error.localizedDescription)")
+            await setError(String(localized: "Couldn't start the session: \(error.localizedDescription)"))
         }
     }
 
@@ -139,7 +145,7 @@ final class FocusSession: NSObject, ObservableObject {
         self.judgments = []
         self.timeline = []
         self.windowEnds = [:]
-        self.sync = JudgeSync { try await AIClient.judge($0) }   // 每次专注一个新队列
+        self.sync = transport.map { JudgeSync(transport: $0) }   // 每次专注一个新队列；AI 关闭时是 nil
         self.pendingJudgments = 0
         self.lastJudgeAt = 0
         self.hrvSamples = []
@@ -156,7 +162,7 @@ final class FocusSession: NSObject, ObservableObject {
         self.startActivityTracking(from: now)
         self.startMotion()
         #endif
-        self.refreshHRV()
+        if aiEnabled { self.refreshHRV() }   // HRV 只给 AI 摘要用
         self.startTicking()
     }
 
@@ -175,44 +181,50 @@ final class FocusSession: NSObject, ObservableObject {
         }
         workoutSession = nil
         builder = nil
+        let aiOn = aiEnabled
         await MainActor.run {
             self.phase = .finished
-            self.aiReviewLoading = true
+            self.aiReviewLoading = aiOn
         }
-        // 结束前把排队的窗口最后试一次（不等退避），这样复盘能用上尽量多的判断
-        let final = await sync.flush(ignoringBackoff: true)
-        await MainActor.run { self.apply(final) }
-        await requestReview()
+        if let sync {
+            // 结束前把排队的窗口最后试一次（不等退避），这样复盘能用上尽量多的判断
+            let final = await sync.flush(ignoringBackoff: true)
+            await MainActor.run { self.apply(final) }
+            await requestReview()
+        }
         saveSamples()
     }
 
     func reset() { phase = .idle }
 
-    /// 手动打标签：下一秒的记录会带上它；同时把最近 1 分钟存成你的 few-shot 例子
+    /// 手动打标签：下一秒的记录会带上它（存进本次的 JSON）；AI build 里还把最近 1 分钟存成你的 few-shot 例子
     func mark(_ label: String) {
         pendingLabel = label
-        guard let startDate, !samples.isEmpty else { return }
+        #if FLOWBEAT_AI
+        guard aiEnabled, let startDate, !samples.isEmpty else { return }
         let window = WindowSummary.make(from: Array(samples.suffix(60)), baseline: engine.baselineHR,
                                         sessionStart: startDate, hrv: hrvSamples)
         LabelStore.add(LabeledExample(window: window, label: label))
+        #endif
     }
 
     // MARK: - AI
 
     /// 每 judgeInterval 秒把这段数据汇总发给后端
     private func requestJudgment() {
-        guard let startDate else { return }
-        let n = Int(AIConfig.judgeInterval)
+        #if FLOWBEAT_AI
+        guard let startDate, let sync else { return }
+        let n = Int(AppFeatures.judgeInterval)
         let window = WindowSummary.make(from: Array(samples.suffix(n)), baseline: engine.baselineHR,
                                         sessionStart: startDate, hrv: hrvSamples)
         windows.append(window)
         windowEnds[window] = elapsed
         let req = JudgeRequest(window: window, examples: LabelStore.examples, recent: Array(judgments.suffix(3)))
-        let sync = self.sync
         Task {
             let result = await sync.submit(req)
             await MainActor.run { self.apply(result) }
         }
+        #endif
     }
 
     /// 读最近 6 小时的 HRV（SDNN）。手表只是偶尔在后台测一次，所以开始时读一次、之后每 5 分钟再读一次就够了。
@@ -234,7 +246,7 @@ final class FocusSession: NSObject, ObservableObject {
     /// 离线期间每 5 秒看一眼：退避时间到了就重发（没到时 flush 立刻返回，不发请求）
     private func retryPendingIfNeeded() {
         guard pendingJudgments > 0, Int(elapsed) % 5 == 0 else { return }
-        let sync = self.sync
+        guard let sync else { return }
         Task {
             let result = await sync.flush()
             await MainActor.run { self.apply(result) }
@@ -251,9 +263,9 @@ final class FocusSession: NSObject, ObservableObject {
         }
         pendingJudgments = result.pending
         if result.pending > 0 {
-            aiError = "AI 离线 · 排队 \(result.pending) 条"
+            aiError = String(localized: "AI offline · \(result.pending) queued")
         } else if result.lastError != nil && result.delivered.isEmpty {
-            aiError = "AI 暂时连不上"
+            aiError = String(localized: "AI unreachable")
         } else {
             aiError = nil
         }
@@ -269,7 +281,7 @@ final class FocusSession: NSObject, ObservableObject {
             windows: windows,
             judgments: judgments
         )
-        let review = try? await AIClient.review(req)
+        let review = try? await transport?.review(req)
         await MainActor.run {
             self.aiReview = review
             self.aiReviewLoading = false
@@ -350,13 +362,13 @@ final class FocusSession: NSObject, ObservableObject {
                                    score: result.sampleScore, label: pendingLabel, away: isAway))
         pendingLabel = nil
 
-        if phase == .running, elapsed - lastJudgeAt >= AIConfig.judgeInterval {
+        if aiEnabled, phase == .running, elapsed - lastJudgeAt >= AppFeatures.judgeInterval {
             lastJudgeAt = elapsed
             requestJudgment()
         } else {
             retryPendingIfNeeded()
         }
-        if phase == .running, Int(elapsed) % 300 == 0 { refreshHRV() }
+        if aiEnabled, phase == .running, Int(elapsed) % 300 == 0 { refreshHRV() }
     }
 
     var calibrationSeconds: TimeInterval { engine.calibrationSeconds }

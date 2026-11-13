@@ -1,0 +1,15 @@
+// Signing.xcconfig — the ONLY place you need to edit to sign Flowbeat.
+//
+// When your Apple Developer account is approved:
+//   1. Find your Team ID: developer.apple.com → Account → Membership details → Team ID
+//      (10 characters, e.g. AB12CD34EF).
+//   2. Put it after the "=" below, e.g.  DEVELOPMENT_TEAM = AB12CD34EF
+//   3. Run `xcodegen generate` and open Flowbeat.xcodeproj. Automatic signing does the rest.
+//
+// project.yml applies this file to every target and configuration (Debug and Release).
+// No target sets DEVELOPMENT_TEAM itself, so this value is never overridden.
+// A Team ID is not a secret (it is printed inside every signed app), so committing it is fine.
+//
+// 签名只需要改这一行：账号批下来后，把 Team ID 填在等号后面，然后 `xcodegen generate`。
+
+DEVELOPMENT_TEAM =

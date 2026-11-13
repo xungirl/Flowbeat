@@ -1,6 +1,8 @@
 name: Flowbeat
 options:
   bundleIdPrefix: com.xungirl
+  # 开发语言是英文，中文（zh-Hans）是翻译。String Catalog: Flowbeat/Localizable.xcstrings
+  developmentLanguage: en
   deploymentTarget:
     watchOS: "10.0"
     iOS: "17.0"
@@ -8,46 +10,84 @@ packages:
   # 纯逻辑放在本地 Swift package 里：macOS 上 `swift test`，watchOS 模拟器上 `xcodebuild test` 都能跑
   FlowbeatCore:
     path: FlowbeatCore
+configs:
+  Debug: debug       # 开发用：带 FLOWBEAT_AI（AI 判断 + 后端），见下面 WatchApp 模板
+  Release: release   # 上架用：没有 FLOWBEAT_AI，二进制里没有任何联网代码
+# 签名：Team ID 只在 Config/Signing.xcconfig 里填一次，所有 target、所有配置都用它
+configFiles:
+  Debug: Config/Signing.xcconfig
+  Release: Config/Signing.xcconfig
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
-targets:
-  Flowbeat:
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+
+# 手表 app 有两种打包方式，源代码完全相同，只差 Info.plist 里的两个键：
+# - Flowbeat：独立手表 app（WKWatchOnly），v1 推荐的上架方式，没有 iPhone app
+# - FlowbeatWatchCompanion：嵌进 iPhone app（FlowbeatPhone）的伴侣版，声明 WKCompanionAppBundleIdentifier
+# 两个 target 的 bundle id 相同（com.xungirl.flowbeat.watchkitapp），所以以后从独立版换成伴侣版不用换 App ID。
+targetTemplates:
+  WatchApp:
     type: application
     platform: watchOS
-    sources: [Flowbeat]
+    sources:
+      - path: Flowbeat
     dependencies:
       - package: FlowbeatCore
     settings:
       base:
-        # 手表 app 的 bundle id 必须以 iPhone app 的为前缀，才能作为它的伴侣安装
+        PRODUCT_NAME: Flowbeat
+        PRODUCT_MODULE_NAME: Flowbeat
         PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat.watchkitapp
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
-        # 在 Xcode 里 Signing & Capabilities 选你自己的 Team 后会写进这里
-        DEVELOPMENT_TEAM: ""
+        # 开发语言英文；中文在 zh-Hans.lproj/InfoPlist.strings
         INFOPLIST_KEY_CFBundleDisplayName: Flowbeat
-        # 有 iPhone 伴侣（同步、画图），但手表 app 不依赖它也能独立运行
-        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.xungirl.flowbeat
-        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
-        INFOPLIST_KEY_NSHealthShareUsageDescription: 读取心率，用来估计你是否处于专注状态。
-        INFOPLIST_KEY_NSHealthUpdateUsageDescription: 开启专注时段需要启动一个「身心」类体能训练以持续读取心率（结束时不会保存）。
-        INFOPLIST_KEY_NSMotionUsageDescription: 识别你是否起身走动，走动时暂停打分，不算作走神。
+        INFOPLIST_KEY_NSHealthShareUsageDescription: Flowbeat reads your heart rate to estimate whether you are focused. Your data stays on your Apple Watch.
+        INFOPLIST_KEY_NSHealthUpdateUsageDescription: A focus session runs a Mind & Body workout so your heart rate can be read every few seconds. The workout is discarded at the end and is not saved to Health.
+        INFOPLIST_KEY_NSMotionUsageDescription: Flowbeat detects when you get up and walk, so that time is paused instead of being counted as distraction.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+      configs:
+        # 功能开关：只有 Debug 编译 AI 判断（AIJudge.swift 整个文件 + FocusSession 里的 AI 部分）。
+        # Release 没有这个条件，后端地址、口令、URLSession 调用都不会进二进制（scripts/verify_release_offline.sh 会检查）。
+        Debug:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) DEBUG FLOWBEAT_AI"
+        Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
     info:
       path: Flowbeat/Info.plist
       properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
+        # 专注时段靠 HKWorkoutSession 在后台持续读心率，watchOS 要求声明 workout-processing
         WKBackgroundModes: [workout-processing]
-        NSAppTransportSecurity:
-          NSAllowsLocalNetworking: true
     entitlements:
       path: Flowbeat/Flowbeat.entitlements
       properties:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
+
+targets:
+  # v1 上架用：独立手表 app
+  Flowbeat:
+    templates: [WatchApp]
+    settings:
+      base:
+        # 注意：WKWatchOnly 和 WKRunsIndependentlyOfCompanionApp 不能同时出现，watchOS 会拒绝安装（模拟器实测）
+        INFOPLIST_KEY_WKWatchOnly: YES
+  # 伴侣版：只作为 FlowbeatPhone 的依赖被构建、嵌进 iPhone app
+  FlowbeatWatchCompanion:
+    templates: [WatchApp]
+    settings:
+      base:
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.xungirl.flowbeat
+        # 有 iPhone 伴侣（同步、画图），但手表 app 不依赖它也能独立运行
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: YES
   FlowbeatPhone:
     type: application
     platform: iOS
@@ -58,18 +98,20 @@ targets:
       - package: FlowbeatCore
         product: FlowbeatPhoneUI
       # 把手表 app 嵌进 iPhone app 的 Watch/ 目录（伴侣 app 的安装方式）
-      - target: Flowbeat
+      - target: FlowbeatWatchCompanion
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ""
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_CFBundleDisplayName: Flowbeat
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         TARGETED_DEVICE_FAMILY: "1"
 schemes:
+  # 独立手表 app（v1 推荐）。Run/Test 用 Debug（AI 开），Archive 用 Release（AI 关）
   Flowbeat:
     build:
       targets:
@@ -81,9 +123,20 @@ schemes:
       gatherCoverageData: true
       targets:
         - package: FlowbeatCore/FlowbeatCoreTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  # iPhone + 嵌入的手表伴侣版
   FlowbeatPhone:
     build:
       targets:
         FlowbeatPhone: all
     run:
       config: Debug
+    profile:
+      config: Release
+    archive:
+      config: Release

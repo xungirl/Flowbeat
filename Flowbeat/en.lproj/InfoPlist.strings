@@ -1,2 +1,12 @@
+/* Home-screen name */
 "CFBundleDisplayName" = "Flowbeat";
 "CFBundleName" = "Flowbeat";
+
+/* HealthKit read: heart rate */
+"NSHealthShareUsageDescription" = "Flowbeat reads your heart rate to estimate whether you are focused. Your data stays on your Apple Watch.";
+
+/* HealthKit write: the workout session that keeps heart rate flowing (discarded at the end) */
+"NSHealthUpdateUsageDescription" = "A focus session runs a Mind & Body workout so your heart rate can be read every few seconds. The workout is discarded at the end and is not saved to Health.";
+
+/* Motion & Fitness: walking detection */
+"NSMotionUsageDescription" = "Flowbeat detects when you get up and walk, so that time is paused instead of being counted as distraction.";

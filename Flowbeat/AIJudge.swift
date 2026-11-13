@@ -1,3 +1,7 @@
+// 整个文件只在 FLOWBEAT_AI 编译条件下存在（project.yml：只有 Debug 配置有）。
+// Release（上架版）里没有后端地址、口令、HTTP 客户端，也没有 few-shot 标注存储。
+// scripts/verify_release_offline.sh 会检查 Release 二进制里确实没有这些字符串。
+#if FLOWBEAT_AI
 import Foundation
 import FlowbeatCore
 
@@ -17,40 +21,35 @@ enum AIConfig {
     #endif
     /// 后端设置了 FLOWBEAT_TOKEN 时，这里填同一个值
     static let token: String? = nil
-    /// 多久让 AI 判断一次（秒）。模拟器里缩短，方便看 demo
-    #if targetEnvironment(simulator)
-    static let judgeInterval: TimeInterval = 30
-    #else
-    static let judgeInterval: TimeInterval = 120
-    #endif
 }
 
 // MARK: - 网络
 
-enum AIClient {
+/// FeatureFlags.judgeTransport 的唯一实现。只能经过开关构造（见 AppFeatures.makeTransport）。
+struct HTTPJudgeTransport: JudgeTransport {
     private static let encoder = FlowbeatJSON.encoder
     private static let decoder = FlowbeatJSON.decoder
 
     /// 失败时抛 HTTPStatusError（后端返回非 200）或 URLError（连不上 / 超时），JudgeSync 据此决定丢弃还是排队重试
-    static func judge(_ req: JudgeRequest) async throws -> Judgment {
+    func judge(_ req: JudgeRequest) async throws -> Judgment {
         try await post("/v1/judge", req)
     }
 
-    static func review(_ req: ReviewRequest) async throws -> Review {
+    func review(_ req: ReviewRequest) async throws -> Review {
         try await post("/v1/review", req)
     }
 
-    private static func post<In: Encodable, Out: Decodable>(_ path: String, _ body: In) async throws -> Out {
+    private func post<In: Encodable, Out: Decodable>(_ path: String, _ body: In) async throws -> Out {
         var r = URLRequest(url: AIConfig.baseURL.appendingPathComponent(path))
         r.httpMethod = "POST"
         r.timeoutInterval = 30
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if let t = AIConfig.token { r.setValue(t, forHTTPHeaderField: "X-Flowbeat-Token") }
-        r.httpBody = try encoder.encode(body)
+        r.httpBody = try Self.encoder.encode(body)
         let (data, resp) = try await URLSession.shared.data(for: r)
         guard let http = resp as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         guard http.statusCode == 200 else { throw HTTPStatusError(code: http.statusCode) }
-        return try decoder.decode(Out.self, from: data)
+        return try Self.decoder.decode(Out.self, from: data)
     }
 }
 
@@ -73,3 +72,4 @@ enum LabelStore {
         }
     }
 }
+#endif
