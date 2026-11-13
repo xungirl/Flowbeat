@@ -30,6 +30,7 @@
   "Judgment": [
     "reason",
     "score",
+    "source",
     "state"
   ]
 }

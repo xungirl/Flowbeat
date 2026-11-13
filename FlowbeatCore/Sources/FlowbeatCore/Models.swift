@@ -142,10 +142,13 @@ public struct LabeledExample: Codable, Equatable {
 public struct Review: Codable, Equatable {
     public var summary: String
     public var tip: String
+    /// "llm" 或 "fallback"（模型不可用时后端按统计数字拼的总结）
+    public var source: String?
 
-    public init(summary: String, tip: String) {
+    public init(summary: String, tip: String, source: String? = nil) {
         self.summary = summary
         self.tip = tip
+        self.source = source
     }
 }
 

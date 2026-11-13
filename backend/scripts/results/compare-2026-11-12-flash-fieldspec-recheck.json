@@ -1,0 +1,211 @@
+{
+ "date": "2026-11-12",
+ "runs": 1,
+ "conditions": [
+  "none"
+ ],
+ "examples": [
+  {
+   "label": "focused",
+   "window": {
+    "minute_of_session": 6,
+    "local_time": "14:32",
+    "baseline_hr": 68,
+    "hr_mean": 70,
+    "hr_min": 66,
+    "hr_max": 74,
+    "hr_trend": 1,
+    "motion_mean": 0.012,
+    "motion_max": 0.04,
+    "still_ratio": 0.94,
+    "away_seconds": 0,
+    "rule_score_mean": 92
+   }
+  },
+  {
+   "label": "distracted",
+   "window": {
+    "minute_of_session": 6,
+    "local_time": "14:32",
+    "baseline_hr": 68,
+    "hr_mean": 84,
+    "hr_min": 66,
+    "hr_max": 91,
+    "hr_trend": 9,
+    "motion_mean": 0.13,
+    "motion_max": 0.31,
+    "still_ratio": 0.35,
+    "away_seconds": 0,
+    "rule_score_mean": 48
+   }
+  }
+ ],
+ "cases": {
+  "focused": {
+   "minute_of_session": 6,
+   "local_time": "14:32",
+   "baseline_hr": 68,
+   "hr_mean": 70,
+   "hr_min": 66,
+   "hr_max": 74,
+   "hr_trend": 1,
+   "motion_mean": 0.012,
+   "motion_max": 0.04,
+   "still_ratio": 0.94,
+   "away_seconds": 0,
+   "rule_score_mean": 92
+  },
+  "distracted": {
+   "minute_of_session": 6,
+   "local_time": "14:32",
+   "baseline_hr": 68,
+   "hr_mean": 84,
+   "hr_min": 66,
+   "hr_max": 91,
+   "hr_trend": 9,
+   "motion_mean": 0.13,
+   "motion_max": 0.31,
+   "still_ratio": 0.35,
+   "away_seconds": 0,
+   "rule_score_mean": 48
+  },
+  "tense-but-still": {
+   "minute_of_session": 6,
+   "local_time": "14:32",
+   "baseline_hr": 68,
+   "hr_mean": 88,
+   "hr_min": 66,
+   "hr_max": 94,
+   "hr_trend": 6,
+   "motion_mean": 0.012,
+   "motion_max": 0.04,
+   "still_ratio": 0.9,
+   "away_seconds": 0,
+   "rule_score_mean": 64
+  },
+  "typing": {
+   "minute_of_session": 14,
+   "local_time": "14:32",
+   "baseline_hr": 68,
+   "hr_mean": 71,
+   "hr_min": 67,
+   "hr_max": 76,
+   "hr_trend": 2,
+   "motion_mean": 0.045,
+   "motion_max": 0.11,
+   "still_ratio": 0.5,
+   "away_seconds": 0,
+   "rule_score_mean": 88
+  },
+  "back-from-walk": {
+   "minute_of_session": 22,
+   "local_time": "14:32",
+   "baseline_hr": 68,
+   "hr_mean": 86,
+   "hr_min": 78,
+   "hr_max": 97,
+   "hr_trend": -15,
+   "motion_mean": 0.06,
+   "motion_max": 0.35,
+   "still_ratio": 0.6,
+   "away_seconds": 45,
+   "rule_score_mean": 82
+  },
+  "no-hr": {
+   "minute_of_session": 30,
+   "local_time": "14:56",
+   "baseline_hr": 68,
+   "motion_mean": 0.025,
+   "motion_max": 0.09,
+   "still_ratio": 0.78,
+   "away_seconds": 0,
+   "rule_score_mean": 98
+  }
+ },
+ "rows": [
+  {
+   "model": "qwen3.8-flash",
+   "run": 1,
+   "case": "focused",
+   "condition": "none",
+   "rule_sent": null,
+   "rule_true": 92,
+   "state": "focused",
+   "score": 95,
+   "reason": "手腕静止，心率平稳",
+   "latency_s": 1.49,
+   "tokens_in": 679,
+   "tokens_out": 23
+  },
+  {
+   "model": "qwen3.8-flash",
+   "run": 1,
+   "case": "distracted",
+   "condition": "none",
+   "rule_sent": null,
+   "rule_true": 48,
+   "state": "distracted",
+   "score": 10,
+   "reason": "心率飙升且手腕动作频繁",
+   "latency_s": 1.92,
+   "tokens_in": 678,
+   "tokens_out": 35
+  },
+  {
+   "model": "qwen3.8-flash",
+   "run": 1,
+   "case": "tense-but-still",
+   "condition": "none",
+   "rule_sent": null,
+   "rule_true": 64,
+   "state": "focused",
+   "score": 85,
+   "reason": "手腕静止且心率虽高但无波动",
+   "latency_s": 0.97,
+   "tokens_in": 678,
+   "tokens_out": 36
+  },
+  {
+   "model": "qwen3.8-flash",
+   "run": 1,
+   "case": "typing",
+   "condition": "none",
+   "rule_sent": null,
+   "rule_true": 88,
+   "state": "focused",
+   "score": 75,
+   "reason": "心率平稳，仍有规律微动",
+   "latency_s": 1.3,
+   "tokens_in": 679,
+   "tokens_out": 25
+  },
+  {
+   "model": "qwen3.8-flash",
+   "run": 1,
+   "case": "back-from-walk",
+   "condition": "none",
+   "rule_sent": null,
+   "rule_true": 82,
+   "state": "distracted",
+   "score": 40,
+   "reason": "离座45秒，动作零碎且心率波动",
+   "latency_s": 1.14,
+   "tokens_in": 680,
+   "tokens_out": 32
+  },
+  {
+   "model": "qwen3.8-flash",
+   "run": 1,
+   "case": "no-hr",
+   "condition": "none",
+   "rule_sent": null,
+   "rule_true": 98,
+   "state": "focused",
+   "score": 85,
+   "reason": "手腕基本静止，动作幅度小",
+   "latency_s": 1.31,
+   "tokens_in": 648,
+   "tokens_out": 34
+  }
+ ]
+}

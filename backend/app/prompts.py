@@ -62,7 +62,7 @@ def judge_user_message(req: JudgeRequest, include_rule_score: bool | None = None
     else:
         parts.append("这个用户还没有标注过例子，请按常识判断。")
     if req.recent:
-        parts.append("本次前几个窗口的判断（从早到晚）：\n" + "\n".join(_dump(j.model_dump()) for j in req.recent))
+        parts.append("本次前几个窗口的判断（从早到晚）：\n" + "\n".join(_dump(j.model_dump(exclude={"source"})) for j in req.recent))
     parts.append("请判断这个窗口：\n" + _dump(_window_dict(req.window, include_rule_score)))
     return "\n\n".join(parts)
 

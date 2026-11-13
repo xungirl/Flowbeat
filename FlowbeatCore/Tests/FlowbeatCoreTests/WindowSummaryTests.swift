@@ -121,6 +121,11 @@ final class WindowSummaryTests: XCTestCase {
         XCTAssertEqual(try keys(req), try contract()["JudgeRequest"])
     }
 
+    func testJudgmentMatchesBackendSchema() throws {
+        let j = Judgment(state: "focused", score: 90, reason: "x", source: "llm")
+        XCTAssertEqual(try keys(j), try contract()["Judgment"])
+    }
+
     func testReviewRequestMatchesBackendSchema() throws {
         let req = ReviewRequest(durationMinutes: 1, averageScore: 80, focusedRatio: 0.5, awayCount: 0, awayMinutes: 0,
                                 windows: [], judgments: [])
