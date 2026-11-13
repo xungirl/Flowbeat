@@ -38,6 +38,9 @@ final class FocusSession: NSObject, ObservableObject {
     private let motionHz = 25.0
     private lazy var motionWindow = RollingMean(capacity: Int(motionHz * 10))   // 最近 10 秒的加速度模长
     private var startDate: Date?
+    /// 本次专注的名字（开始时间，ISO 8601，冒号换成 -）：存档 Documents/sessions/<name>.json 和
+    /// 待发队列 Application Support/Flowbeat/judge-queue/<name>.json 同名
+    private var sessionName: String?
     private var tickTimer: Timer?
     private var pendingLabel: String?
 
@@ -59,8 +62,20 @@ final class FocusSession: NSObject, ObservableObject {
     /// 最近 6 小时的 HRV（SDNN）读数。没授权 / 没读数时是空数组，摘要里就不带 HRV
     private var hrvSamples: [HRVSample] = []
     /// 所有判断请求都走这个队列：在线时等于直接发；连不上后端时排队，按 15 s → 30 s → … ≤ 5 min 退避重试，最多 30 条
-    /// AI 关闭时是 nil。
+    /// AI 关闭时是 nil。队列每次变化都落盘（JudgeQueueStore），app 被杀掉后下次启动接着发。
     private var sync: JudgeSync?
+    #if FLOWBEAT_AI
+    private let queueStore = JudgeQueueStore(directory: JudgeQueueStore.defaultDirectory())
+    /// 正在补发上次剩下的队列（防止启动和结束时同时补发同一份）
+    private var drainTask: Task<Void, Never>?
+    #endif
+
+    override init() {
+        super.init()
+        #if FLOWBEAT_AI
+        Task { @MainActor in self.drainLeftovers() }   // 启动时：上次没发完的窗口（≤ 1 小时）补发，判断补进对应的存档
+        #endif
+    }
     /// 还在排队等发送的窗口数（> 0 时 UI 显示「离线」）
     @Published private(set) var pendingJudgments = 0
 
@@ -145,7 +160,15 @@ final class FocusSession: NSObject, ObservableObject {
         self.judgments = []
         self.timeline = []
         self.windowEnds = [:]
-        self.sync = transport.map { JudgeSync(transport: $0) }   // 每次专注一个新队列；AI 关闭时是 nil
+        let name = Self.sessionName(for: now)
+        self.sessionName = name
+        #if FLOWBEAT_AI
+        // 每次专注一个新队列（一个文件）；AI 关闭时是 nil
+        let store = queueStore
+        self.sync = transport.map {
+            JudgeSync(transport: $0, onChange: { q in try? store.save(q, session: name) })
+        }
+        #endif
         self.pendingJudgments = 0
         self.lastJudgeAt = 0
         self.hrvSamples = []
@@ -193,6 +216,9 @@ final class FocusSession: NSObject, ObservableObject {
             await requestReview()
         }
         saveSamples()
+        #if FLOWBEAT_AI
+        await MainActor.run { self.drainLeftovers() }   // 结束后还有没发出去的，下次启动或下次结束时再试
+        #endif
     }
 
     func reset() { phase = .idle }
@@ -416,16 +442,53 @@ final class FocusSession: NSObject, ObservableObject {
         else { return }
         let dir = docs.appendingPathComponent("sessions", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let name = ISO8601DateFormatter().string(from: samples[0].t)
-            .replacingOccurrences(of: ":", with: "-")
+        let name = sessionName ?? Self.sessionName(for: samples[0].t)
         let encoder = FlowbeatJSON.sessionEncoder
         let record = SessionRecord(samples: samples, windows: windows, judgments: judgments, review: aiReview,
                                    timeline: timeline)
         let url = dir.appendingPathComponent("\(name).json")
-        if let data = try? encoder.encode(record), (try? data.write(to: url)) != nil {
+        if let data = try? encoder.encode(record), (try? data.write(to: url, options: .atomic)) != nil {
             PhoneSync.shared.send(sessionFile: url)   // 有 iPhone 端就同步过去画时间线
         }
     }
+
+    static func sessionName(for start: Date) -> String {
+        ISO8601DateFormatter().string(from: start).replacingOccurrences(of: ":", with: "-")
+    }
+
+    static var sessionsDirectory: URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?
+            .appendingPathComponent("sessions", isDirectory: true)
+    }
+
+    #if FLOWBEAT_AI
+    /// 补发以前的专注留下的待发队列（不包括正在进行的这次）。送达的判断补进那次的存档 JSON。
+    /// 还是发不出去就留在磁盘上（最多 1 小时，过期的读的时候就丢掉）。
+    @MainActor private func drainLeftovers() {
+        guard let transport, drainTask == nil else { return }
+        let store = queueStore
+        let current = (phase == .calibrating || phase == .running) ? sessionName : nil
+        drainTask = Task.detached { [weak self] in
+            for name in store.sessions() where name != current {
+                guard let q = store.load(session: name) else { continue }
+                let sync = JudgeSync(transport: transport, queue: q, onChange: { try? store.save($0, session: name) })
+                let r = await sync.flush(ignoringBackoff: true)
+                if !r.delivered.isEmpty { Self.appendToArchive(name, r.delivered) }
+            }
+            await MainActor.run { self?.drainTask = nil }
+        }
+    }
+
+    /// 把晚到的判断补进 Documents/sessions/<name>.json（原子写）。存档不存在（专注中途被杀、没存档）就算了。
+    private static func appendToArchive(_ name: String, _ delivered: [(request: JudgeRequest, judgment: Judgment)]) {
+        guard let url = sessionsDirectory?.appendingPathComponent("\(name).json"),
+              let data = try? Data(contentsOf: url),
+              let record = try? FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data),
+              let out = try? FlowbeatJSON.sessionEncoder.encode(record.appendingLateJudgments(delivered))
+        else { return }
+        try? out.write(to: url, options: .atomic)
+    }
+    #endif
 
     @MainActor private func setError(_ msg: String) { errorMessage = msg }
 }

@@ -8,7 +8,8 @@ import Foundation
 // - 严格按先后顺序发（队头阻塞）：结果要按时间顺序进存档和复盘。
 // - 4xx（除 408/429）是永久错误（比如数据被后端校验拒绝），重试也没用，直接丢掉这一条，不阻塞后面的。
 // - 不做随机抖动（jitter）：只有一块手表连一个后端，不存在成千上万客户端同时重试的「惊群」。
-// - 只在内存里：一次专注内有效。app 被杀掉时没发出去的窗口就丢了，但窗口本身在 SessionRecord.windows 里。
+// - 落盘：JudgeSync 每次变化都通过 onChange 交给 JudgeQueueStore 原子写进 Application Support（QueuePersistence.swift），
+//   app 被杀掉、重启后还能接着发。
 
 /// 退避策略：第 n 次连续失败后等待 base × multiplier^(n-1)，封顶 maxDelay。
 public struct RetryPolicy: Codable, Equatable, Sendable {
@@ -121,6 +122,22 @@ public struct OfflineQueue<Item: Codable & Equatable & Sendable>: Codable, Equat
     }
 }
 
+extension OfflineQueue {
+    /// 用现在的上限重新整理一份读回来的队列：保留顺序、入队时间和已尝试次数，
+    /// 丢掉过期的和超出容量的（丢最老的），退避状态清空（重启后先试一次）。
+    public static func restoring(_ saved: OfflineQueue, capacity: Int = 30, maxAge: TimeInterval = 3600,
+                                 policy: RetryPolicy = RetryPolicy(), at now: Date) -> OfflineQueue {
+        var q = OfflineQueue(capacity: capacity, maxAge: maxAge, policy: policy)
+        let fresh = saved.entries.filter { now.timeIntervalSince($0.enqueuedAt) <= maxAge }
+        for e in fresh.suffix(capacity) {
+            q.entries.append(Entry(id: q.nextID, item: e.item, enqueuedAt: e.enqueuedAt, attempts: e.attempts))
+            q.nextID += 1
+        }
+        q.droppedCount = saved.entries.count - q.entries.count
+        return q
+    }
+}
+
 /// 后端返回了非 200。4xx 里除了 408（超时）、429（限流）都算永久错误。
 public struct HTTPStatusError: Error, Equatable {
     public let code: Int
@@ -146,11 +163,15 @@ public actor JudgeSync {
     private let send: Send
     private let now: @Sendable () -> Date
     private var isFlushing = false
+    /// 队列每次变化后调用（入队、送达、失败、过期），用来落盘。在 actor 里同步调用，所以写盘顺序和变化顺序一致。
+    private let onChange: (@Sendable (OfflineQueue<JudgeRequest>) -> Void)?
 
     public init(queue: OfflineQueue<JudgeRequest> = OfflineQueue(), now: @escaping @Sendable () -> Date = { Date() },
+                onChange: (@Sendable (OfflineQueue<JudgeRequest>) -> Void)? = nil,
                 send: @escaping Send) {
         self.queue = queue
         self.now = now
+        self.onChange = onChange
         self.send = send
     }
 
@@ -159,6 +180,7 @@ public actor JudgeSync {
     /// 新窗口：入队后立刻尝试 flush（退避期内则只入队）
     public func submit(_ request: JudgeRequest) async -> SyncResult {
         queue.enqueue(request, at: now())
+        onChange?(queue)
         return await flush()
     }
 
@@ -174,7 +196,7 @@ public actor JudgeSync {
         isFlushing = true
         defer { isFlushing = false }
 
-        queue.expire(at: now())
+        if queue.expire(at: now()) > 0 { onChange?(queue) }
         while let head = queue.head, ignoringBackoff || !queue.isBlocked(at: now()) {
             do {
                 let j = try await send(head.item)
@@ -187,8 +209,10 @@ public actor JudgeSync {
             } catch {
                 queue.recordTransientFailure(id: head.id, at: now())
                 result.lastError = String(describing: error)
+                onChange?(queue)
                 break
             }
+            onChange?(queue)
         }
         result.pending = queue.count
         return result

@@ -37,7 +37,8 @@ public struct FeatureFlags: Equatable, Sendable {
 extension JudgeSync {
     /// 用一个传输层建发送队列
     public init(transport: any JudgeTransport, queue: OfflineQueue<JudgeRequest> = OfflineQueue(),
-                now: @escaping @Sendable () -> Date = { Date() }) {
-        self.init(queue: queue, now: now, send: { try await transport.judge($0) })
+                now: @escaping @Sendable () -> Date = { Date() },
+                onChange: (@Sendable (OfflineQueue<JudgeRequest>) -> Void)? = nil) {
+        self.init(queue: queue, now: now, onChange: onChange, send: { try await transport.judge($0) })
     }
 }
