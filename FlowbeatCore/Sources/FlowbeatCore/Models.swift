@@ -72,10 +72,14 @@ public struct WindowSummary: Codable, Hashable, Sendable {
     public var awaySeconds: Int
     /// 手表本地规则分。照样发给后端（存档、复盘、离线兜底要用），但后端默认不放进 LLM 提示词，避免锚定。
     public var ruleScoreMean: Double?
+    /// 最近一次 HRV（SDNN，毫秒）和它距窗口结束的分钟数。没有读数时都是 nil（JSON 里不出现）
+    public var hrvSdnnMs: Double?
+    public var hrvAgeMin: Int?
 
     public init(minuteOfSession: Int, localTime: String, baselineHr: Double? = nil, hrMean: Double? = nil,
                 hrMin: Double? = nil, hrMax: Double? = nil, hrTrend: Double? = nil, motionMean: Double,
-                motionMax: Double, stillRatio: Double, awaySeconds: Int, ruleScoreMean: Double? = nil) {
+                motionMax: Double, stillRatio: Double, awaySeconds: Int, ruleScoreMean: Double? = nil,
+                hrvSdnnMs: Double? = nil, hrvAgeMin: Int? = nil) {
         self.minuteOfSession = minuteOfSession
         self.localTime = localTime
         self.baselineHr = baselineHr
@@ -88,6 +92,8 @@ public struct WindowSummary: Codable, Hashable, Sendable {
         self.stillRatio = stillRatio
         self.awaySeconds = awaySeconds
         self.ruleScoreMean = ruleScoreMean
+        self.hrvSdnnMs = hrvSdnnMs
+        self.hrvAgeMin = hrvAgeMin
     }
 
     /// 低于这个加速度（g）算「手腕静止」
@@ -95,7 +101,7 @@ public struct WindowSummary: Codable, Hashable, Sendable {
 
     /// 把一段逐秒样本压缩成摘要：只发统计量，不发原始数据，省流量、保护隐私，也更好让模型理解
     public static func make(from samples: [FocusSample], baseline: Double?, sessionStart: Date,
-                            timeZone: TimeZone = .current) -> WindowSummary {
+                            hrv: [HRVSample] = [], timeZone: TimeZone = .current) -> WindowSummary {
         let hrs = samples.compactMap(\.heartRate)
         let motions = samples.map(\.motion)
         let scores = samples.compactMap(\.score)
@@ -104,6 +110,7 @@ public struct WindowSummary: Codable, Hashable, Sendable {
         fmt.dateFormat = "HH:mm"
         fmt.timeZone = timeZone
         fmt.locale = Locale(identifier: "en_US_POSIX")
+        let reading = HRVSummary.latest(from: hrv, at: end)
         return WindowSummary(
             minuteOfSession: max(0, Int(end.timeIntervalSince(sessionStart) / 60)),
             localTime: fmt.string(from: end),
@@ -116,7 +123,9 @@ public struct WindowSummary: Codable, Hashable, Sendable {
             motionMax: round3(motions.max() ?? 0),
             stillRatio: round3(motions.isEmpty ? 0 : Double(motions.filter { $0 < stillThreshold }.count) / Double(motions.count)),
             awaySeconds: samples.filter(\.away).count,
-            ruleScoreMean: scores.isEmpty ? nil : round1(scores.reduce(0, +) / Double(scores.count))
+            ruleScoreMean: scores.isEmpty ? nil : round1(scores.reduce(0, +) / Double(scores.count)),
+            hrvSdnnMs: reading?.sdnnMs,
+            hrvAgeMin: reading?.ageMinutes
         )
     }
 }

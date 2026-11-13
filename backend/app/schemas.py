@@ -29,6 +29,9 @@ class WindowSummary(BaseModel):
     still_ratio: float = Field(ge=0, le=1, description="手腕基本静止（<0.03g）的秒数占比 0–1")
     away_seconds: int = Field(ge=0, le=3600, description="窗口内离座（走路/跑步）的秒数")
     rule_score_mean: float | None = Field(None, ge=0, le=100, description="手表本地规则算出的平均分 0–100")
+    # HRV 是可选信号：手表只是偶尔测一次 SDNN，所以发的是「最近一次读数 + 距今多久」，没有就不发
+    hrv_sdnn_ms: float | None = Field(None, ge=5, le=250, description="最近一次心率变异性 SDNN（毫秒）")
+    hrv_age_min: int | None = Field(None, ge=0, le=24 * 60, description="这次 HRV 读数距窗口结束的分钟数")
 
 
 class LLMJudgment(BaseModel):

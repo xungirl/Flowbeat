@@ -6,6 +6,8 @@
     "hr_mean",
     "hr_min",
     "hr_trend",
+    "hrv_age_min",
+    "hrv_sdnn_ms",
     "local_time",
     "minute_of_session",
     "motion_max",

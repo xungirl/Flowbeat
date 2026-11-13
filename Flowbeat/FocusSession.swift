@@ -52,6 +52,8 @@ final class FocusSession: NSObject, ObservableObject {
     /// 每个窗口在第几秒结束（判断可能离线排队后才回来，用它把判断放回时间轴的正确位置）
     private var windowEnds: [WindowSummary: TimeInterval] = [:]
     private var lastJudgeAt: TimeInterval = 0
+    /// 最近 6 小时的 HRV（SDNN）读数。没授权 / 没读数时是空数组，摘要里就不带 HRV
+    private var hrvSamples: [HRVSample] = []
     /// 所有判断请求都走这个队列：在线时等于直接发；连不上后端时排队，按 15 s → 30 s → … ≤ 5 min 退避重试，最多 30 条
     private var sync = JudgeSync { try await AIClient.judge($0) }
     /// 还在排队等发送的窗口数（> 0 时 UI 显示「离线」）
@@ -64,7 +66,8 @@ final class FocusSession: NSObject, ObservableObject {
             await setError("这台设备不支持 HealthKit")
             return false
         }
-        let read: Set<HKObjectType> = [HKQuantityType(.heartRate)]
+        // HRV 是可选的：用户不给也能用，只是摘要里没有 hrv 字段
+        let read: Set<HKObjectType> = [HKQuantityType(.heartRate), HKQuantityType(.heartRateVariabilitySDNN)]
         let share: Set<HKSampleType> = [HKObjectType.workoutType()]
         do {
             try await healthStore.requestAuthorization(toShare: share, read: read)
@@ -139,6 +142,7 @@ final class FocusSession: NSObject, ObservableObject {
         self.sync = JudgeSync { try await AIClient.judge($0) }   // 每次专注一个新队列
         self.pendingJudgments = 0
         self.lastJudgeAt = 0
+        self.hrvSamples = []
         self.startDate = now
         self.phase = .calibrating
         #if targetEnvironment(simulator)
@@ -152,6 +156,7 @@ final class FocusSession: NSObject, ObservableObject {
         self.startActivityTracking(from: now)
         self.startMotion()
         #endif
+        self.refreshHRV()
         self.startTicking()
     }
 
@@ -187,7 +192,8 @@ final class FocusSession: NSObject, ObservableObject {
     func mark(_ label: String) {
         pendingLabel = label
         guard let startDate, !samples.isEmpty else { return }
-        let window = WindowSummary.make(from: Array(samples.suffix(60)), baseline: engine.baselineHR, sessionStart: startDate)
+        let window = WindowSummary.make(from: Array(samples.suffix(60)), baseline: engine.baselineHR,
+                                        sessionStart: startDate, hrv: hrvSamples)
         LabelStore.add(LabeledExample(window: window, label: label))
     }
 
@@ -197,7 +203,8 @@ final class FocusSession: NSObject, ObservableObject {
     private func requestJudgment() {
         guard let startDate else { return }
         let n = Int(AIConfig.judgeInterval)
-        let window = WindowSummary.make(from: Array(samples.suffix(n)), baseline: engine.baselineHR, sessionStart: startDate)
+        let window = WindowSummary.make(from: Array(samples.suffix(n)), baseline: engine.baselineHR,
+                                        sessionStart: startDate, hrv: hrvSamples)
         windows.append(window)
         windowEnds[window] = elapsed
         let req = JudgeRequest(window: window, examples: LabelStore.examples, recent: Array(judgments.suffix(3)))
@@ -206,6 +213,22 @@ final class FocusSession: NSObject, ObservableObject {
             let result = await sync.submit(req)
             await MainActor.run { self.apply(result) }
         }
+    }
+
+    /// 读最近 6 小时的 HRV（SDNN）。手表只是偶尔在后台测一次，所以开始时读一次、之后每 5 分钟再读一次就够了。
+    /// 没授权时 HealthKit 不报错，只是返回空结果（隐私设计：app 无法知道用户拒绝了读取），这里就当「没有 HRV」。
+    private func refreshHRV() {
+        let type = HKQuantityType(.heartRateVariabilitySDNN)
+        let since = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-HRVSummary.defaultLookback), end: nil)
+        let newestFirst = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
+        let query = HKSampleQuery(sampleType: type, predicate: since, limit: 10, sortDescriptors: [newestFirst]) { [weak self] _, results, _ in
+            let ms = HKUnit.secondUnit(with: .milli)
+            let list = (results as? [HKQuantitySample] ?? []).map {
+                HRVSample(date: $0.startDate, sdnnMs: $0.quantity.doubleValue(for: ms))
+            }
+            DispatchQueue.main.async { self?.hrvSamples = list }
+        }
+        healthStore.execute(query)
     }
 
     /// 离线期间每 5 秒看一眼：退避时间到了就重发（没到时 flush 立刻返回，不发请求）
@@ -333,6 +356,7 @@ final class FocusSession: NSObject, ObservableObject {
         } else {
             retryPendingIfNeeded()
         }
+        if phase == .running, Int(elapsed) % 300 == 0 { refreshHRV() }
     }
 
     var calibrationSeconds: TimeInterval { engine.calibrationSeconds }

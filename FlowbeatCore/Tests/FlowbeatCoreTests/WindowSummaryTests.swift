@@ -118,7 +118,7 @@ final class WindowSummaryTests: XCTestCase {
     /// 所有可选字段都填上，才能看到完整的字段集
     static let fullWindow = WindowSummary(minuteOfSession: 1, localTime: "10:00", baselineHr: 68, hrMean: 70, hrMin: 66,
                                           hrMax: 74, hrTrend: 1, motionMean: 0.01, motionMax: 0.04, stillRatio: 0.9,
-                                          awaySeconds: 0, ruleScoreMean: 90)
+                                          awaySeconds: 0, ruleScoreMean: 90, hrvSdnnMs: 42, hrvAgeMin: 30)
 
     func testWindowSummaryMatchesBackendSchema() throws {
         XCTAssertEqual(try keys(Self.fullWindow), try contract()["WindowSummary"])

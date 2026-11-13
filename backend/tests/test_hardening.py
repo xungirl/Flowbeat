@@ -243,3 +243,21 @@ def test_llm_output_schema_has_no_source_field():
 def test_fake_provider_marks_source():
     req = JudgeRequest.model_validate({"window": WINDOW})
     assert asyncio.run(FakeProvider().judge(req)).source == "llm"
+
+
+# ---------- HRV（可选信号） ----------
+
+def test_hrv_fields_are_optional_and_validated(client):
+    assert client.post("/v1/judge", json={"window": WINDOW}).status_code == 200
+    ok = {**WINDOW, "hrv_sdnn_ms": 42.5, "hrv_age_min": 30}
+    assert client.post("/v1/judge", json={"window": ok}).status_code == 200
+    assert client.post("/v1/judge", json={"window": {**ok, "hrv_sdnn_ms": 900}}).status_code == 422
+    assert client.post("/v1/judge", json={"window": {**ok, "hrv_age_min": -1}}).status_code == 422
+
+
+def test_hrv_reaches_the_prompt_only_when_present():
+    from app import prompts
+    with_hrv = JudgeRequest.model_validate({"window": {**WINDOW, "hrv_sdnn_ms": 42.5, "hrv_age_min": 30}})
+    without = JudgeRequest.model_validate({"window": WINDOW})
+    assert '"hrv_sdnn_ms":42.5' in prompts.judge_user_message(with_hrv)
+    assert "hrv_sdnn_ms" not in prompts.judge_user_message(without)
