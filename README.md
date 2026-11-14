@@ -6,7 +6,19 @@
 
 > <p><img src="docs/screenshots/watch-offline-queued.png" width="180" alt="Watch: AI offline, 2 windows queued"> <img src="docs/screenshots/ci-phone-detail.png" width="200" alt="iPhone timeline (CI iOS simulator, sample data)"></p>
 
-**Status (2026-11-12):** everything below has run only in the **watchOS simulator** (demo mode with simulated sensors), in local tests, and in GitHub Actions. It has **never run on a real Apple Watch**, and the focus score has not been validated against real labeled data.
+**Status (2026-11-14):** everything below has run only in the **watchOS simulator** (demo mode with simulated sensors), in local tests, and in GitHub Actions. It has **never run on a real Apple Watch**, and the focus score has not been validated against real labeled data.
+
+**Progress at a glance (2026-11-14)**
+
+| Area | State |
+|---|---|
+| Core app (focus score, calibration, summary, iPhone companion) | Done, simulator only |
+| On-device features: haptic nudge, Pomodoro + goals, history/streak, complications, App Intents, personalization | Done (stages 18–23), simulator only |
+| Tests | 157 Swift (macOS + watchOS sim), 48 backend pytest; CI green |
+| Release build offline check | Passing (`scripts/verify_release_offline.sh`) |
+| App Store materials (listing EN/中文, privacy policy, review notes, 40 screenshots) | Ready in `docs/appstore/` |
+| Apple Developer account | Pending (identity verification) |
+| Next | Team ID → `Config/Signing.xcconfig`, register App Group + widget App ID, real-device tests 1–21, TestFlight, submit |
 
 **v1 (App Store) is prepared but not submitted:** a watch-only app that runs fully on-device with no network. The AI judge below is compiled only into Debug builds. Signing, real-device testing and submission are waiting for the Apple Developer account. See [v1 release plan](#v1-release-plan).
 
