@@ -22,6 +22,15 @@
 
 **v1 (App Store) is prepared but not submitted:** a watch-only app that runs fully on-device with no network. The AI judge below is compiled only into Debug builds. Signing, real-device testing and submission are waiting for the Apple Developer account. See [v1 release plan](#v1-release-plan).
 
+## Diagrams
+
+| | |
+|---|---|
+| ![How Flowbeat works](docs/diagrams/01-how-it-works.png) | ![Engineering and results](docs/diagrams/02-engineering.png) |
+| **01 · How it works**: sensors → calibration → on-device score → personalization → what you see on the watch; Release is fully on-device, the LLM judge is Debug-only | **02 · Engineering**: tests, Release offline check, two LLM bugs found and fixed, App Store materials, and the honest status |
+
+Hand-written SVG sources in `docs/diagrams/` embed real simulator screenshots (copies in `docs/diagrams/img/`); `docs/diagrams/render.sh` re-renders them with headless Chrome.
+
 ## Features
 
 What the v1 (Release, on-device) build does. Everything here runs on the watch; none of it needs a network.
