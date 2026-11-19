@@ -12,3 +12,6 @@ __pycache__/
 # Swift package build output
 FlowbeatCore/.build/
 FlowbeatCore/.swiftpm/
+
+# personal team ID for local device testing
+Config/Signing.local.xcconfig

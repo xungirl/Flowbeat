@@ -230,8 +230,9 @@ struct StartView: View {
             if let i = args.firstIndex(of: "-demoStopAfter"), i + 1 < args.count, let secs = Double(args[i + 1]) {
                 // 不能直接在 .task 里 sleep：开始后 StartView 就消失了，.task 被取消，sleep 立刻抛错 → 马上 stop。
                 // 用一个不跟视图生命周期绑定的 Task。
+                // `try?`：sleep 只有被取消才会抛错，这里被取消就直接 stop，不需要把错误往外传（也消掉「未使用的抛错 Task」警告）。
                 Task { [session] in
-                    try await Task.sleep(nanoseconds: UInt64(secs * 1_000_000_000))
+                    try? await Task.sleep(nanoseconds: UInt64(secs * 1_000_000_000))
                     await session.stop()
                 }
             }
