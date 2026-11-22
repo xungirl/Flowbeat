@@ -14,10 +14,13 @@ let package = Package(
         // iPhone 端的 SwiftUI + Swift Charts 视图。放在 package 里而不是 iOS target 里，
         // 这样在 macOS 上也能编译、用 ImageRenderer 渲染截图（这台机器没有装 iOS 模拟器运行时）。
         .library(name: "FlowbeatPhoneUI", targets: ["FlowbeatPhoneUI"]),
+        // iPhone 端的数据库（SwiftData + 可选 iCloud 同步）：模型、导入去重、统计、CSV 导出
+        .library(name: "FlowbeatPhoneData", targets: ["FlowbeatPhoneData"]),
     ],
     targets: [
         .target(name: "FlowbeatCore"),
         .target(name: "FlowbeatPhoneUI", dependencies: ["FlowbeatCore"], resources: [.process("Resources")]),
+        .target(name: "FlowbeatPhoneData", dependencies: ["FlowbeatCore"]),
         // swift run render-snapshots <session.json> <输出目录>：把 iPhone 视图渲染成 PNG
         .executableTarget(name: "render-snapshots", dependencies: ["FlowbeatCore", "FlowbeatPhoneUI"]),
         .testTarget(
@@ -25,5 +28,6 @@ let package = Package(
             dependencies: ["FlowbeatCore"],
             resources: [.copy("Fixtures")]
         ),
+        .testTarget(name: "FlowbeatPhoneDataTests", dependencies: ["FlowbeatPhoneData", "FlowbeatCore"]),
     ]
 )
