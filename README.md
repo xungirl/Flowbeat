@@ -6,21 +6,47 @@
 
 > <p><img src="docs/screenshots/watch-offline-queued.png" width="180" alt="Watch: AI offline, 2 windows queued"> <img src="docs/screenshots/ci-phone-detail.png" width="200" alt="iPhone timeline (CI iOS simulator, sample data)"></p>
 
-**Status (2026-11-14):** everything below has run only in the **watchOS simulator** (demo mode with simulated sensors), in local tests, and in GitHub Actions. It has **never run on a real Apple Watch**, and the focus score has not been validated against real labeled data.
+**Status (2026-11-22):** the Release watch build is installed on a real Apple Watch Series 9 (free-team signing, devtest bundle IDs) and real-device tests have started; nothing measured on it is reported here yet. The iPhone app with its SwiftData + iCloud store has run in the iOS simulator only. The focus score has not been validated against real labeled data.
 
-**Progress at a glance (2026-11-14)**
+**Progress at a glance (2026-11-22)**
 
 | Area | State |
 |---|---|
 | Core app (focus score, calibration, summary, iPhone companion) | Done, simulator only |
 | On-device features: haptic nudge, Pomodoro + goals, history/streak, complications, App Intents, personalization | Done (stages 18–23), simulator only |
-| Tests | 157 Swift (macOS + watchOS sim), 48 backend pytest; CI green |
+| iPhone app: SwiftData store (+ iCloud, no heart rate), Today / Sessions / Settings, notes, CSV/JSON export, goal sync, watch resend | Done 2026-11-22, iOS simulator only; watch→phone transfer not yet seen end to end (see *iPhone app*) |
+| Tests | 162 FlowbeatCore + 11 FlowbeatPhoneData Swift tests (macOS), watchOS-sim suite, 48 backend pytest |
 | Release build offline check | Passing (`scripts/verify_release_offline.sh`) |
 | App Store materials (listing EN/中文, privacy policy, review notes, 40 screenshots) | Ready in `docs/appstore/` |
-| Apple Developer account | Pending (identity verification) |
-| Next | Team ID → `Config/Signing.xcconfig`, register App Group + widget App ID, real-device tests 1–21, TestFlight, submit |
+| Apple Developer account | Paid 2026-11-21 (China region), processing (up to 48 h) |
+| Next | Real-device tests 1–26 (watch, then watch→phone sync), Team ID → `Config/Signing.xcconfig`, register App Group / iCloud container, deploy CloudKit schema, TestFlight, submit |
 
-**v1 (App Store) is prepared but not submitted:** a watch-only app that runs fully on-device with no network. The AI judge below is compiled only into Debug builds. Signing, real-device testing and submission are waiting for the Apple Developer account. See [v1 release plan](#v1-release-plan).
+**v1 (App Store) is prepared but not submitted:** an iPhone app + Apple Watch app (decided 2026-11-22; earlier drafts were watch-only) with no server of ours: the watch scores on-device, the iPhone stores sessions in SwiftData and syncs them to the user's private iCloud without heart rate. The AI judge below is compiled only into Debug builds. Signing, real-device testing and submission are waiting for the Apple Developer account. See [v1 release plan](#v1-release-plan).
+
+## iPhone app
+
+Added 2026-11-22, when the user decided to ship the iPhone app in v1 and asked for a real database instead of loose JSON files.
+
+| | |
+|---|---|
+| ![Today](docs/screenshots/phone-today.png) | ![Session detail](docs/screenshots/phone-detail.png) |
+
+*iOS simulator, `-demoData` (a fixed, generated month; not measurements).*
+
+**Storage.** `FlowbeatPhoneData` (Swift package target) holds a SwiftData `@Model` `StoredSession`: summary fields for lists and stats, per-minute buckets for history, and the session JSON in external storage that is decoded only on the detail page. Sessions are upserted by name (the watch's file name), so a resend updates instead of duplicating and keeps the user's note. The model follows CloudKit's rules (no unique constraints, every field defaulted), and `removeDuplicates` cleans up the copies an iCloud merge can create.
+
+**Heart rate never goes to iCloud.** App Review guideline 5.1.3(ii) forbids personal health information in iCloud. Every write to the synced store goes through `SessionRecord.withoutHealthData()` (per-second heart rate, window HR stats and HRV removed); the original watch file with heart rate stays in `RawArchive` (Application Support, excluded from iCloud Backup) and is used for JSON export. A unit test asserts the stored record has no health data.
+
+**iCloud is opt-in by build, never a crash.** The app reads the container ID from Info.plist (`FlowbeatCloudKitContainer`); empty means local-only (the free-team devtest project). Container creation falls back iCloud → local → in-memory. Unsigned simulator builds keep iCloud off unless launched with `-iCloud`: without the entitlement CloudKit traps on a background queue that no `try` can catch (found by launching the unsigned build).
+
+**Sync with the watch.** The watch now keeps a `SyncLedger` of sessions the phone confirmed and resends everything else on activation, after each session and when the companion app gets installed, so a phone app installed weeks later backfills the history; sessions deleted on the phone aren't sent again. The daily goal syncs both ways through the application context, newer change wins.
+
+**Screens.** Today: goal ring, streak, last 7 and 30 days, best hour, lifetime totals, label counts; empty state with a bundled sample session for reviewers without a watch. Sessions: grouped by day, note search, swipe to delete; detail adds a note, the session goal, JSON export and delete to the existing focus timeline. Settings: daily goal, storage location, CSV export (formula-injection-safe), watch status, disclaimer.
+
+**What was verified (2026-11-22).**
+- 11 SwiftData tests on macOS with an in-memory container: summary fields, re-import keeps the note, corrupt data rejected, path traversal stripped, duplicate cleanup, legacy-archive import, 30-day overview, CSV escaping, raw archive round trip, no health data in the synced record.
+- iOS simulator: all screens with `-demoData`; empty state without it; a session generated by the watch simulator's demo mode imports through the legacy path and renders (40 s, average 100).
+- Watch simulator → phone simulator transfer: the watch side reports `transferFile` finished with `kNoErr`, but on this Mac's Xcode 27 simulator the phone's `wcd` daemon never finished setup (`fetchInstalledApplicationsForPairedDevice … NSXPCConnectionInvalid … Already retried max times`), so the file wasn't delivered to the app. **The watch→phone path still has to be shown on a real pair** (checklist tests 22–26).
 
 ## Diagrams
 
@@ -210,7 +236,8 @@ Optional env: `QWEN_MODEL` (default `qwen3.8-flash`), `CLAUDE_MODEL`, `LOG_FORMA
 |---|---|---|
 | Swift logic (macOS) | `cd FlowbeatCore && swift test` | **157 passed** (2026-11-13) |
 | Same suite on the watchOS 11.4 simulator | `xcodegen generate && xcodebuild test -project Flowbeat.xcodeproj -scheme Flowbeat -destination 'platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)'` | **157 passed** (2026-11-13) |
-| Every UI string has 中文 | `scripts/check_localization.py <derived-data>` (after a Debug build) | watch app 122, widget 7, 0 missing |
+| iPhone database (SwiftData, in-memory) | `swift test --package-path FlowbeatCore --filter SessionLibraryTests` | **11 passed** (2026-11-22) |
+| Every UI string has 中文 | `scripts/check_localization.py <derived-data>` (after Debug builds of `Flowbeat` and `FlowbeatPhone`) | watch app 122, widget 7, iPhone 65, 0 missing (2026-11-22) |
 | Backend (fake / scripted providers, no LLM calls) | `cd backend && uv run pytest` | **48 passed** |
 | Release has no network code | `scripts/verify_release_offline.sh` | Debug 6/6 markers, Release 0/6 → OK |
 | CI (`.github/workflows/ci.yml`) | on every push to `main` | backend pytest · Docker build + container smoke test · `swift test` on macOS · watchOS-simulator tests · localization check · widget embedded + App Intents metadata · Release offline check · iPhone app Debug + Release builds · iOS-simulator screenshots |
@@ -653,7 +680,7 @@ Caveat: the comparison is a smoke test (6 synthetic windows, 2–3 runs per cell
 - **When the developer account is approved:** paste the Team ID into `Config/Signing.xcconfig`, run the real-device test plan in [`docs/appstore/submission-checklist.md`](docs/appstore/submission-checklist.md) (HR sample rate, battery drain per hour, background survival, permission flows, a 30-min session), then TestFlight → submit.
 - **Also on the Team ID:** register the App Group `group.com.xungirl.flowbeat` and the widget App ID (checklist step 2), then run the new device tests 14–21 (haptics, Pomodoro with the wrist down, complications, Siri, double tap, personalization).
 - Collect ≥ 10 labeled sessions, then measure the rule score, the personal model (held-out sessions, not training accuracy) and the LLM judge against the labels (accuracy / F1). Tune the nudge threshold, the 8-label minimum and the 50/50 blend from that data.
-- v1.1: test WatchConnectivity on a real pair, then ship the iPhone companion. Add rate limiting and HTTPS before any backend deployment.
+- Test WatchConnectivity on the real pair (checklist 22–26); the iPhone app ships in v1. Add rate limiting and HTTPS before any backend deployment.
 
 ## Roadmap
 

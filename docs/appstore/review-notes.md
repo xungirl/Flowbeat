@@ -6,10 +6,13 @@ Paste the block below into **App Store Connect → App Review Information → No
 Thank you for reviewing Flowbeat.
 
 WHAT IT IS
-Flowbeat is a standalone Apple Watch app (no iPhone app) that shows a live 0–100 focus estimate while the user works or studies. The estimate is computed on the watch from two signals: heart rate (HealthKit) and wrist motion (CoreMotion device motion). The app makes no medical claims, and the first-launch screens state that it is not a medical device and does not diagnose anything.
+Flowbeat is an Apple Watch app with an iPhone companion. The watch shows a live 0–100 focus estimate while the user works or studies; the iPhone app keeps every session and shows trends. The watch app also works without the iPhone. The estimate is computed on the watch from two signals: heart rate (HealthKit) and wrist motion (CoreMotion device motion). The app makes no medical claims, and the first-launch screens state that it is not a medical device and does not diagnose anything.
 
-NO ACCOUNT, NO NETWORK
-There is no login, no account, no server and no third-party SDK. The app contains no networking code; all data stays in the app's sandbox on the watch.
+NO ACCOUNT, NO SERVER
+There is no login, no account, no server of ours and no third-party SDK. The apps contain no networking code of their own. Sessions move from the watch to the iPhone with WatchConnectivity (transferFile). On the iPhone they are stored with SwiftData and, if the user has iCloud on, synced to the user's private CloudKit database.
+
+HEALTH DATA AND iCLOUD (guideline 5.1.3)
+Heart rate is never stored in iCloud. Before a session is saved to the synced SwiftData store, all heart-rate and heart-rate-variability values are removed; only focus scores, wrist motion, time away, the user's labels and notes are synced. The original file with heart rate stays on the device (watch, and an iPhone folder excluded from iCloud Backup) and is used only when the user exports a session. Health data is not used for advertising and is not shared.
 
 WHY AN HKWorkoutSession (Mind & Body)
 The score needs heart-rate readings every few seconds for the whole focus session (typically 25–90 minutes). Outside a workout, watchOS samples heart rate only occasionally. While the session is active, the user often lowers the wrist, and the app needs to keep running in the background. A workout session is the supported way to get both, so the app declares the "workout-processing" background mode and uses the Mind & Body activity type, which matches a seated, calm activity.
@@ -25,6 +28,8 @@ HOW TO DEMO (about 3 minutes)
 4. Scroll down (Digital Crown) to the second page. Tap "Focused" or "Distracted" to label the moment, then tap "End".
 5. The summary shows average focus, time in flow, focused minutes, longest focus streak, time away and steps. Tap "Done".
 6. The (i) button on the start screen reopens the "About" / not-a-medical-device screens.
+6b. iPhone: open Flowbeat on the paired iPhone. The session you just ended appears under Sessions (it transfers in the background, usually within a few seconds; keep the watch near the phone). Today shows focused minutes against the daily goal, the last 7 and 30 days and the best time of day. Open the session to see its focus timeline and add a note. Settings → "Export all as CSV". Changing the daily goal on the iPhone updates the watch.
+   If no watch is available: on first launch the iPhone shows "No focus sessions yet" with a "View a sample session" button that opens a bundled example (clearly labeled as sample data).
 7. Optional features (all on-device):
    - "Pomodoro" on the start screen: 25/5 work/break blocks with a haptic at each switch; scoring pauses during breaks. Lengths and an optional focused-minutes goal are in Settings (gear icon).
    - Distraction nudge (on by default, Settings): after 3 minutes of a low score the watch plays one light haptic, at most once every 10 minutes, never while walking, calibrating or on a break.
@@ -47,9 +52,10 @@ Contact: [contact email]
 ## Why each point is there (for us, not for Review)
 
 - **Guideline 2.5.4 (background modes for their intended purpose)** is the main risk. `workout-processing` is meant for workouts. Mind & Body is a real HealthKit activity type that meditation and breathing apps use, and a seated focus session is close to that. The note explains the purpose up front so the reviewer doesn't have to guess. **If it's rejected anyway**, the fallback is a `WKExtendedRuntimeSession` (the *mindfulness* type allows up to 1 h) without a workout. That would mean much sparser heart rate, so the score would lean on wrist motion. It's a real product trade-off, not just a config change.
-- **Guideline 5.1.3 (HealthKit):** a privacy policy URL is required; health data isn't used for advertising or stored in iCloud; it isn't shared with third parties. All true in v1.
+- **Guideline 5.1.3 (HealthKit):** a privacy policy URL is required; health data isn't used for advertising or stored in iCloud; it isn't shared with third parties. All true in v1 (see 5.1.3(ii) below for how iCloud is kept free of heart rate).
 - **Guideline 1.4.1 (medical apps):** no claims of measuring attention or health; the disclaimer is in the app, the description and the policy.
-- **Guideline 4.2 (minimum functionality):** a standalone watch app with a live score, calibration, away detection, labels and a summary is more than a single-screen wrapper. Shipping the iPhone app as well would add a second surface that only shows a list, which is the riskier part (see the checklist).
+- **Guideline 4.2 (minimum functionality):** the watch app (live score, calibration, away detection, labels, summary) carries the product. The iPhone app was a thin list in the first draft, which is why v1 was watch-only; since 2026-11-22 it has its own value: 7/30-day trends, best hour, streak, notes and search, CSV/JSON export, goal sync and iCloud restore. The sample-session button covers a reviewer without a watch.
+- **Guideline 5.1.3(ii) (no personal health information in iCloud):** handled in code, not just in text: `SessionRecord.withoutHealthData()` runs before every write to the CloudKit-backed store, and a unit test asserts the stored record has no heart rate.
 - The **demo steps** must match the real build. Re-check them on a real watch before submitting; the 60 s calibration is the device value (the simulator uses 10 s).
 
 ## Things to verify on a real watch before pasting this

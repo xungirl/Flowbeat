@@ -2,7 +2,7 @@
 
 Paste-ready text for App Store Connect, in English and Simplified Chinese. Character counts were checked with a script (`len()` on the string). App Store Connect counts **characters** for these fields. The Chinese keywords are also kept under 100 **bytes** in UTF-8, in case any tool counts bytes.
 
-v1 scope: a **watch-only** app that runs fully on-device, with **no network**, no account and no AI judge (see [submission-checklist.md](submission-checklist.md) for why the iPhone companion isn't in v1).
+v1 scope (changed 2026-11-22): an **iPhone app + Apple Watch app**. The watch app works on its own; the iPhone app stores every session in a SwiftData database with optional iCloud sync (no heart rate in iCloud), and shows trends, notes and exports. No server of ours, no account, no AI judge. Earlier drafts were watch-only; see [submission-checklist.md](submission-checklist.md).
 
 ---
 
@@ -34,6 +34,12 @@ STAY ON TRACK
 • Pomodoro mode: 25-minute work blocks and 5-minute breaks (or your own lengths), with a haptic at each switch. Scoring pauses during breaks.
 • Session goal: aim for a number of focused minutes and see whether you made it.
 
+ON YOUR IPHONE
+• Every session is saved on your iPhone: today's minutes against your daily goal, your streak, the last 7 and 30 days, and the time of day you focus best.
+• Open any session to see its focus timeline, add a note ("thesis chapter 3"), and search your notes later.
+• Export everything as CSV, or a single session as JSON, to analyze it yourself.
+• With iCloud, your sessions come back on a new iPhone. Heart rate is never stored in iCloud.
+
 SEE YOUR PROGRESS
 • History on your wrist: today's focused minutes, the last 7 days, your daily-goal streak and the time of day you focus best.
 • Watch face complications and Smart Stack: today's minutes and progress toward your daily goal.
@@ -43,13 +49,13 @@ PERSONALIZED, ON YOUR WATCH
 • After you have labeled at least 8 focused and 8 distracted moments, Flowbeat trains a small model on your watch from those labels and blends it with the built-in estimate. It shows "Personalized" when it is active, and you can turn it off.
 
 PRIVATE BY DESIGN
-• Everything stays on your Apple Watch. No account, no sign-in, no servers, no ads, no tracking.
+• Your sessions stay on your Apple Watch, your iPhone and, if you use it, your own private iCloud. No account, no sign-in, no servers of ours, no ads, no tracking.
 • Flowbeat reads heart rate from Health. During a session it runs a Mind & Body workout so the watch measures your heart rate every few seconds; the workout is discarded at the end and is not saved to Health.
 
 NOT A MEDICAL DEVICE
 Flowbeat gives an estimate for personal reflection. It does not diagnose, treat or monitor any health condition, and the score is not a measurement of attention or of your health.
 
-Requires Apple Watch with watchOS 10 or later.
+Requires Apple Watch with watchOS 10 or later. The iPhone app requires iOS 17 or later.
 ```
 
 **What's New** (v1.0.0): `First release.` (App Store Connect doesn't show What's New for a first version.)
@@ -93,6 +99,12 @@ If v1.0 is ever submitted *without* these features and they ship later as an upd
 • 番茄钟：25 分钟工作、5 分钟休息（也可以自定义），切换时震动提示，休息时暂停计分。
 • 本次目标：设定要专注多少分钟，结束时看是否达成。
 
+在 iPhone 上
+• 每次专注都会保存在 iPhone 上：今天的专注分钟数和每日目标、连续达标天数、最近 7 天和 30 天、一天中最专注的时段。
+• 打开任意一次专注，查看它的专注时间线，写一句备注（比如「论文第三章」），以后可以按备注搜索。
+• 全部导出为 CSV，或把单次记录导出为 JSON，自己分析。
+• 开启 iCloud 后，换新 iPhone 也能找回记录。心率从不存进 iCloud。
+
 看见进步
 • 手腕上的历史：今天的专注分钟数、最近 7 天、每日目标连续达标天数、一天中最专注的时段。
 • 表盘复杂功能和智能叠放：今天的专注分钟数和每日目标进度。
@@ -102,13 +114,13 @@ If v1.0 is ever submitted *without* these features and they ship later as an upd
 • 当你标记了至少 8 次「专注」和 8 次「走神」后，心流会在手表上用这些标记训练一个小模型，并和内置估计混合；启用时显示「个性化」，也可以关闭。
 
 隐私
-• 所有数据只保存在你的 Apple Watch 上。没有账号、不用登录、没有服务器、没有广告、不追踪。
+• 专注记录只保存在你的 Apple Watch、iPhone，以及（如果你使用的话）你自己的 iCloud 私有数据库里。没有账号、不用登录、没有我们的服务器、没有广告、不追踪。
 • 心流从「健康」读取心率。专注时会启动一个「身心」类体能训练，让手表每隔几秒测一次心率；结束时丢弃，不会存进「健康」。
 
 不是医疗设备
 心流给出的是供你自己参考的估计，不做任何诊断、治疗，也不监测任何健康状况；专注指数不是对注意力或健康的测量。
 
-需要 watchOS 10 或更高版本的 Apple Watch。
+需要 watchOS 10 或更高版本的 Apple Watch。iPhone app 需要 iOS 17 或更高版本。
 ```
 
 **新功能**：`首次发布。`
@@ -151,6 +163,7 @@ Expected result: **4+**. The questionnaire's exact wording changes over time, so
 - **Data collection: "No, we do not collect data from this app."** → the label shows **Data Not Collected**.
 - Why this is accurate for v1: Apple counts data as "collected" when it is transmitted off the device so that you or a third party can access it for longer than it takes to service a request in real time. The v1 binary has **no networking code** (verified by `scripts/verify_release_offline.sh` on every CI run). Heart rate, motion and session files stay in the app's sandbox on the watch.
 - Tracking: **No.** No SDKs, no IDFA, no third-party code at all.
+- **iPhone app + iCloud (2026-11-22): still Data Not Collected.** Sessions sync through CloudKit into the user's *private* database, which the developer can't read; Apple doesn't count data the developer can't access as collected. Heart rate and HRV are stripped before anything is written to the synced store (`SessionRecord.withoutHealthData()`), which also keeps guideline 5.1.3(ii) (no personal health information in iCloud).
 - This matches `Flowbeat/PrivacyInfo.xcprivacy` (no collected data types, no tracking).
 - **Still accurate with the 2026-11-13 features.** History, the widget snapshot (shared through an App Group with the app's own widget extension on the same watch) and the personalized model are all computed and stored on the watch. Nothing is transmitted, and the Release binary, now including the widget extension, still has no networking code (`verify_release_offline.sh` scans both). Siri/Shortcuts only deliver a start/stop request to the app. None of this counts as "collected".
 - **If the AI judge is ever enabled in a release,** this answer changes. 2-minute summaries derived from heart rate and motion would go to your backend and then to a third-party LLM provider. You would declare **Health & Fitness → Health** (and probably **Fitness**) as *collected*, *not linked to identity* (there's no account), *not used for tracking*, purpose *App Functionality*. You would also have to update the privacy manifest and the privacy policy, bump `OnboardingState.currentVersion` so users see the new disclosure, and add a separate in-app consent before any data leaves the watch (guideline 5.1.2/5.1.3).
