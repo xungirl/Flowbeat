@@ -10,16 +10,18 @@ import glob, json, os, sys
 
 dd = sys.argv[1]
 config = sys.argv[2] if len(sys.argv) > 2 else "Debug"
-TARGETS = {  # target build dir → its String Catalog
-    "Flowbeat": "Flowbeat/Localizable.xcstrings",
-    "FlowbeatWidgets": "FlowbeatWidgets/Localizable.xcstrings",
+TARGETS = {  # target build dir → (platform, its String Catalog)
+    "Flowbeat": ("watchsimulator", "Flowbeat/Localizable.xcstrings"),
+    "FlowbeatWidgets": ("watchsimulator", "FlowbeatWidgets/Localizable.xcstrings"),
+    # needs the FlowbeatPhone scheme built for the iOS simulator into the same derived data dir
+    "FlowbeatPhone": ("iphonesimulator", "FlowbeatPhone/Localizable.xcstrings"),
 }
 fail = 0
-for target, catalog_path in TARGETS.items():
-    build = os.path.join(dd, "Build/Intermediates.noindex/Flowbeat.build", f"{config}-watchsimulator", f"{target}.build")
+for target, (platform, catalog_path) in TARGETS.items():
+    build = os.path.join(dd, "Build/Intermediates.noindex/Flowbeat.build", f"{config}-{platform}", f"{target}.build")
     files = glob.glob(os.path.join(build, "**", "*.stringsdata"), recursive=True)
     if not files:
-        print(f"FAIL {target}: no .stringsdata under {build} (build the Flowbeat scheme first)")
+        print(f"FAIL {target}: no .stringsdata under {build} (build the Flowbeat and FlowbeatPhone schemes first)")
         fail = 1
         continue
     keys = set()

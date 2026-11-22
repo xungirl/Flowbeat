@@ -135,6 +135,8 @@ targets:
         product: FlowbeatCore
       - package: FlowbeatCore
         product: FlowbeatPhoneUI
+      - package: FlowbeatCore
+        product: FlowbeatPhoneData
       # 把手表 app 嵌进 iPhone app 的 Watch/ 目录（伴侣 app 的安装方式）
       - target: FlowbeatWatchCompanion
     settings:
@@ -148,6 +150,24 @@ targets:
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         TARGETED_DEVICE_FAMILY: "1"
+        # SwiftData 的 iCloud 同步用这个 CloudKit 容器（用户自己的私有数据库）。
+        # app 从 Info.plist 读它；为空时只存本机（免费账号的真机测试工程就设成空）。
+        FLOWBEAT_CLOUDKIT_CONTAINER: iCloud.com.xungirl.flowbeat
+    info:
+      path: FlowbeatPhone/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        FlowbeatCloudKitContainer: $(FLOWBEAT_CLOUDKIT_CONTAINER)
+        # CloudKit 用静默推送通知 app「iCloud 里有新数据」
+        UIBackgroundModes: [remote-notification]
+    entitlements:
+      path: FlowbeatPhone/FlowbeatPhone.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.xungirl.flowbeat]
+        com.apple.developer.icloud-services: [CloudKit]
+        # 开发构建用 development，Archive 导出到 App Store 时 Xcode 自动换成 production
+        aps-environment: development
 schemes:
   # 独立手表 app（v1 推荐）。Run/Test 用 Debug（AI 开），Archive 用 Release（AI 关）
   Flowbeat:

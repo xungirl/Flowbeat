@@ -1,12 +1,88 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%lld": {
+      "shouldTranslate": false
+    },
+    "%lld days at goal": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 天达标"
+          }
+        }
+      }
+    },
+    "%lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 分钟"
+          }
+        }
+      }
+    },
+    "%lld min focused · %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注 %lld 分钟 · %@"
+          }
+        }
+      }
+    },
+    "%lld%% of scored time was focused": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打分时间里 %lld%% 是专注的"
+          }
+        }
+      }
+    },
+    "%lld-day streak": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连续达标 %lld 天"
+          }
+        }
+      }
+    },
+    "--": {
+      "shouldTranslate": false
+    },
     "A received session couldn't be read": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "收到的存档无法解析"
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于"
+          }
+        }
+      }
+    },
+    "Apple Watch": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apple Watch"
           }
         }
       }
@@ -41,12 +117,282 @@
         }
       }
     },
+    "Daily goal": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每日目标"
+          }
+        }
+      }
+    },
+    "Day": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日期"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除"
+          }
+        }
+      }
+    },
+    "Delete session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除这次专注"
+          }
+        }
+      }
+    },
+    "Delete this session?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除这次专注？"
+          }
+        }
+      }
+    },
+    "Demo data, not saved.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "演示数据，不会保存。"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        }
+      }
+    },
+    "Export all as CSV": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部导出为 CSV"
+          }
+        }
+      }
+    },
+    "Export session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出这次专注"
+          }
+        }
+      }
+    },
+    "Flowbeat estimates focus from heart rate and wrist motion. The score is an estimate, not a measurement, and it isn't a medical device.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "心流根据心率和手腕动作估计专注程度。分数是估计值，不是测量结果，本 app 也不是医疗器械。"
+          }
+        }
+      }
+    },
     "Flowbeat isn't installed on your Apple Watch yet": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "手表上还没装心流"
+          }
+        }
+      }
+    },
+    "Focused in total": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "累计专注"
+          }
+        }
+      }
+    },
+    "Focused today": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天已专注"
+          }
+        }
+      }
+    },
+    "Goal": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标"
+          }
+        }
+      }
+    },
+    "Goal %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标 %lld 分钟"
+          }
+        }
+      }
+    },
+    "Goal reached": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已达成目标"
+          }
+        }
+      }
+    },
+    "Goal reached: %lld of %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已达成目标：%lld / %lld 分钟"
+          }
+        }
+      }
+    },
+    "Goal: %lld of %lld min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标：%lld / %lld 分钟"
+          }
+        }
+      }
+    },
+    "Insights": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "洞察"
+          }
+        }
+      }
+    },
+    "It's removed from this iPhone and from iCloud. The copy on your watch isn't sent again.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "会从这台 iPhone 和 iCloud 中删除。手表上的那份不会再传过来。"
+          }
+        }
+      }
+    },
+    "Labels: Focused / Distracted taps on the watch.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标签：你在手表上点的「专注 / 走神」次数。"
+          }
+        }
+      }
+    },
+    "Last 30 days": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近 30 天"
+          }
+        }
+      }
+    },
+    "Last 7 days": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近 7 天"
+          }
+        }
+      }
+    },
+    "Last session received": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近一次收到"
+          }
+        }
+      }
+    },
+    "Minutes": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分钟"
+          }
+        }
+      }
+    },
+    "Minutes with a focus score of 70 or more. The daily goal sets your streak and syncs with your watch.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注分数 ≥ 70 的分钟数。每日目标决定连续达标天数，并和手表同步。"
+          }
+        }
+      }
+    },
+    "No account, no tracking, no ads. Sessions never leave your devices except through your own iCloud.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无需账号，不追踪，没有广告。专注记录只会通过你自己的 iCloud 离开你的设备。"
+          }
+        }
+      }
+    },
+    "No focus sessions yet": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还没有专注记录"
           }
         }
       }
@@ -61,6 +407,46 @@
         }
       }
     },
+    "Note": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备注"
+          }
+        }
+      }
+    },
+    "Per active day": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有专注的日子平均"
+          }
+        }
+      }
+    },
+    "Sample session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "示例记录"
+          }
+        }
+      }
+    },
+    "Search notes": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索备注"
+          }
+        }
+      }
+    },
     "Session": {
       "localizations": {
         "zh-Hans": {
@@ -71,12 +457,192 @@
         }
       }
     },
+    "Sessions": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记录"
+          }
+        }
+      }
+    },
+    "Sessions are stored only on this iPhone.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注记录只保存在这台 iPhone 上。"
+          }
+        }
+      }
+    },
+    "Sessions from your Apple Watch appear here after you end them.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 Apple Watch 上结束专注后，记录会出现在这里。"
+          }
+        }
+      }
+    },
+    "Sessions sync to your private iCloud database, so a new iPhone gets them back. Only your Apple Account can read them. Turn it off in iOS Settings → your name → iCloud.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注记录同步到你的 iCloud 私有数据库，换新 iPhone 也能找回，只有你的 Apple 账户能读取。可以在 iOS 设置 → 你的名字 → iCloud 中关闭。"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        }
+      }
+    },
+    "Start a focus session in Flowbeat on your Apple Watch. When you end it, the session appears here with its focus timeline.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 Apple Watch 上的心流里开始一次专注。结束后，这次专注和它的专注时间线会出现在这里。"
+          }
+        }
+      }
+    },
+    "Stored in": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储位置"
+          }
+        }
+      }
+    },
+    "Temporary (demo)": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "临时（演示）"
+          }
+        }
+      }
+    },
     "This device doesn't support Apple Watch connectivity.": {
       "localizations": {
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
             "value": "这台设备不支持 WatchConnectivity"
+          }
+        }
+      }
+    },
+    "This iPhone": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这台 iPhone"
+          }
+        }
+      }
+    },
+    "This iPhone + iCloud": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这台 iPhone + iCloud"
+          }
+        }
+      }
+    },
+    "Today": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天"
+          }
+        }
+      }
+    },
+    "Version": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本"
+          }
+        }
+      }
+    },
+    "View a sample session": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "看一个示例"
+          }
+        }
+      }
+    },
+    "What were you working on?": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这次在做什么？"
+          }
+        }
+      }
+    },
+    "Your best time: %@": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你最专注的时段：%@"
+          }
+        }
+      }
+    },
+    "Your data": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的数据"
+          }
+        }
+      }
+    },
+    "Your labels": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的标签"
+          }
+        }
+      }
+    },
+    "min": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分钟"
           }
         }
       }
