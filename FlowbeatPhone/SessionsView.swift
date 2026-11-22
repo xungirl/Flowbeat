@@ -82,7 +82,8 @@ struct StoredSessionRow: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
-                    Text((session.start..<max(session.start, session.end)).formatted(.interval.hour().minute()))
+                    // 只显示时间（跨午夜的专注用区间格式会带上两个完整日期，太长）；日期在分组标题里
+                    Text(verbatim: "\(session.start.formatted(date: .omitted, time: .shortened)) – \(session.end.formatted(date: .omitted, time: .shortened))")
                         .font(.subheadline.weight(.medium))
                     if session.sessionMode == .pomodoro {
                         Image(systemName: "timer").font(.caption).foregroundStyle(.secondary)
