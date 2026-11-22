@@ -12,7 +12,7 @@
 //
 // 签名只需要改这一行：账号批下来后，把 Team ID 填在等号后面，然后 `xcodegen generate`。
 
-DEVELOPMENT_TEAM =
+DEVELOPMENT_TEAM = 85YXGJNGWG
 
 // Local override (gitignored): personal/free team for device testing, e.g. DEVELOPMENT_TEAM = XXXXXXXXXX
 #include? "Signing.local.xcconfig"
