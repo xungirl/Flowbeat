@@ -197,7 +197,11 @@ private struct EmptyStateCard: View {
     var body: some View {
         Card {
             VStack(alignment: .leading, spacing: 10) {
-                Label("No focus sessions yet", systemImage: "applewatch").font(.headline)
+                HStack(spacing: 10) {
+                    Image("BrandMark").resizable().scaledToFit().frame(width: 32, height: 32)
+                        .accessibilityHidden(true)
+                    Text("No focus sessions yet").font(.headline)
+                }
                 Text("Start a focus session in Flowbeat on your Apple Watch. When you end it, the session appears here with its focus timeline.")
                     .font(.subheadline).foregroundStyle(.secondary)
                 if let sample = SampleSession.record {

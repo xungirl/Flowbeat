@@ -18,7 +18,7 @@ struct OnboardingView: View {
 
     var body: some View {
         TabView(selection: $pageIndex) {
-            page(icon: "waveform.path.ecg", color: .mint, title: "Flowbeat",
+            page(icon: OnboardingView.brandMark, color: .mint, title: "Flowbeat",
                  body: "Estimates how focused you are from your heart rate and wrist motion, as a 0–100 score.")
                 .tag(0)
             page(icon: "info.circle", color: .orange, title: "Not a medical device",
@@ -30,8 +30,8 @@ struct OnboardingView: View {
                      body: "AI judge is on: every 2 minutes a summary of your heart rate and motion is sent to the backend configured in this build.")
                     .tag(2)
             } else {
-                page(icon: "lock.applewatch", color: .cyan, title: "Stays on your watch",
-                     body: "Heart rate, motion and your sessions are stored only on this Apple Watch. No account, no servers, no tracking.")
+                page(icon: "lock.applewatch", color: .cyan, title: "Stays on your devices",
+                     body: "Your sessions stay on your Apple Watch and your iPhone. Heart rate is never stored in iCloud. No account, no servers, no tracking.")
                     .tag(2)
             }
             switch mode {
@@ -42,12 +42,20 @@ struct OnboardingView: View {
         .tabViewStyle(.verticalPage)
     }
 
+    static let brandMark = "brand-mark"
+
     private func page(icon: String, color: Color, title: LocalizedStringKey, body: LocalizedStringKey) -> some View {
         ScrollView {
             VStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(color)
+                if icon == Self.brandMark {
+                    // 第一页用 Flowbeat 的标志（圆环 + 心跳变波浪），其余页用系统图标
+                    Image("BrandMark").resizable().scaledToFit().frame(width: 48, height: 48)
+                        .accessibilityHidden(true)
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(color)
+                }
                 Text(title)
                     .font(.system(.headline, design: .rounded))
                     .multilineTextAlignment(.center)

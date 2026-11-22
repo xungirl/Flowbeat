@@ -1,1212 +1,1214 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "%lld": {
-      "shouldTranslate": false
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%lld" : {
+      "shouldTranslate" : false
     },
-    "%lld / %lld min": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld / %2$lld 分钟"
+    "%lld / %lld min" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld 分钟"
           }
         }
       }
     },
-    "%lld min": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld 分钟"
+    "%lld min" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 分钟"
           }
         }
       }
     },
-    "%lld of %lld min focused": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "专注 %1$lld / %2$lld 分钟"
+    "%lld of %lld min focused" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "专注 %1$lld / %2$lld 分钟"
           }
         }
       }
     },
-    "%lld%% in flow": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld%% 时间在心流"
+    "%lld%% in flow" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% 时间在心流"
           }
         }
       }
     },
-    "%lld-day streak": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "连续 %lld 天达标"
+    "%lld-day streak" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连续 %lld 天达标"
           }
         }
       }
     },
-    "%lld× · %@": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld 次 · %@"
+    "%lld× · %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 次 · %@"
           }
         }
       }
     },
-    "--": {
-      "shouldTranslate": false
+    "--" : {
+      "shouldTranslate" : false
     },
-    "/ %lld min": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "/ %lld 分钟"
+    "/ %lld min" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/ %lld 分钟"
           }
         }
       }
     },
-    "A bit distracted": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "有点分心"
+    "A bit distracted" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有点分心"
           }
         }
       }
     },
-    "A focus session is already running.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已经有一次专注在进行。"
+    "A focus session is already running." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已经有一次专注在进行。"
           }
         }
       }
     },
-    "A focus session runs a Mind & Body workout to read your heart rate. It is discarded and never saved to Health.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "专注时会启动一个「身心」类体能训练来读取心率；结束时丢弃，不会存进「健康」。"
+    "A focus session runs a Mind & Body workout to read your heart rate. It is discarded and never saved to Health." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "专注时会启动一个「身心」类体能训练来读取心率；结束时丢弃，不会存进「健康」。"
           }
         }
       }
     },
-    "A gentle tap on your wrist when you have been distracted for a while. Never while you walk, calibrate or take a break.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "走神一阵子时，手腕上轻轻震一下。走路、校准和休息时不会提醒。"
+    "A gentle tap on your wrist when you have been distracted for a while. Never while you walk, calibrate or take a break." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "走神一阵子时，手腕上轻轻震一下。走路、校准和休息时不会提醒。"
           }
         }
       }
     },
-    "AI is watching…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI 正在观察…"
+    "AI is watching…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 正在观察…"
           }
         }
       }
     },
-    "AI judge is on: every 2 minutes a summary of your heart rate and motion is sent to the backend configured in this build.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI 判断已开启：每 2 分钟把心率和动作的统计摘要发到这个版本里配置的后端。"
+    "AI judge is on: every 2 minutes a summary of your heart rate and motion is sent to the backend configured in this build." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 判断已开启：每 2 分钟把心率和动作的统计摘要发到这个版本里配置的后端。"
           }
         }
       }
     },
-    "AI offline · %lld queued": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI 离线 · 排队 %lld 条"
+    "AI offline · %lld queued" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 离线 · 排队 %lld 条"
           }
         }
       }
     },
-    "AI review": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI 复盘"
+    "AI review" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 复盘"
           }
         }
       }
     },
-    "AI reviewing…": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI 复盘中…"
+    "AI reviewing…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 复盘中…"
           }
         }
       }
     },
-    "AI unreachable": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI 暂时连不上"
+    "AI unreachable" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 暂时连不上"
           }
         }
       }
     },
-    "AI waits for calibration": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AI 等待校准完成"
+    "AI waits for calibration" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 等待校准完成"
           }
         }
       }
     },
-    "About Flowbeat": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关于心流"
+    "About Flowbeat" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关于心流"
           }
         }
       }
     },
-    "Active": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "活跃"
+    "Active" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "活跃"
           }
         }
       }
     },
-    "Active · %lld focused / %lld distracted labels": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已启用 · %1$lld 个「专注」/ %2$lld 个「走神」标签"
+    "Active · %lld focused / %lld distracted labels" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已启用 · %1$lld 个「专注」/ %2$lld 个「走神」标签"
           }
         }
       }
     },
-    "After": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "走神多久后提醒"
+    "After" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "走神多久后提醒"
           }
         }
       }
     },
-    "Allow Health access: Settings → Health → Apps → Flowbeat.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "请允许「健康」权限：设置 → 健康 → App → 心流。"
+    "Allow Health access: Settings → Health → Apps → Flowbeat." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请允许「健康」权限：设置 → 健康 → App → 心流。"
           }
         }
       }
     },
-    "At most every": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "两次提醒至少间隔"
+    "At most every" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "两次提醒至少间隔"
           }
         }
       }
     },
-    "Average focus": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "平均专注"
+    "Average focus" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平均专注"
           }
         }
       }
     },
-    "Away": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "离座"
+    "Away" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "离座"
           }
         }
       }
     },
-    "BPM": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "BPM"
+    "BPM" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BPM"
           }
         }
       }
     },
-    "Best time of day": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "一天中最专注的时段"
+    "Best time of day" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一天中最专注的时段"
           }
         }
       }
     },
-    "Break": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "休息"
+    "Break" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "休息"
           }
         }
       }
     },
-    "Break %lld": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "第 %lld 次休息"
+    "Break %lld" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "第 %lld 次休息"
           }
         }
       }
     },
-    "Calibrating · sit still": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "校准中 · 请静坐"
+    "Calibrating · sit still" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "校准中 · 请静坐"
           }
         }
       }
     },
-    "Check again": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "再检查一次"
+    "Check again" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再检查一次"
           }
         }
       }
     },
-    "Close": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关闭"
+    "Close" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
           }
         }
       }
     },
-    "Continue": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "继续"
+    "Continue" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "继续"
           }
         }
       }
     },
-    "Couldn't request Health access: %@": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法申请「健康」权限：%@"
+    "Couldn't request Health access: %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法申请「健康」权限：%@"
           }
         }
       }
     },
-    "Couldn't start the session: %@": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无法开始专注：%@"
+    "Couldn't start the session: %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法开始专注：%@"
           }
         }
       }
     },
-    "Daily goal": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每日目标"
+    "Daily goal" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每日目标"
           }
         }
       }
     },
-    "Day": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "日期"
+    "Day" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日期"
           }
         }
       }
     },
-    "Developer build": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开发版"
+    "Developer build" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开发版"
           }
         }
       }
     },
-    "Distracted": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "走神"
+    "Distracted" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "走神"
           }
         }
       }
     },
-    "Distraction nudge": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "走神提醒"
+    "Distraction nudge" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "走神提醒"
           }
         }
       }
     },
-    "Done": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "完成"
+    "Done" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
           }
         }
       }
     },
-    "Drifting? Back to it": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "走神了？回来吧"
+    "Drifting? Back to it" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "走神了？回来吧"
           }
         }
       }
     },
-    "Duration": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "时长"
+    "Duration" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "时长"
           }
         }
       }
     },
-    "End": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "结束"
+    "End" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "结束"
           }
         }
       }
     },
-    "Ends the running focus session and saves it.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "结束正在进行的专注并保存。"
+    "Ends the running focus session and saves it." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "结束正在进行的专注并保存。"
           }
         }
       }
     },
-    "Estimates how focused you are from your heart rate and wrist motion, as a 0–100 score.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "根据心率和手腕动作，估计你有多专注，给出 0–100 的专注指数。"
+    "Estimates how focused you are from your heart rate and wrist motion, as a 0–100 score." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "根据心率和手腕动作，估计你有多专注，给出 0–100 的专注指数。"
           }
         }
       }
     },
-    "Flowbeat": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "心流"
+    "Flowbeat" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心流"
           }
         }
       }
     },
-    "Flowbeat couldn't start. Open the app to see why.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "心流没能开始，打开 app 查看原因。"
+    "Flowbeat couldn't start. Open the app to see why." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心流没能开始，打开 app 查看原因。"
           }
         }
       }
     },
-    "Focus %lld/%lld min": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "专注 %1$lld/%2$lld 分钟"
+    "Focus %lld/%lld min" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "专注 %1$lld/%2$lld 分钟"
           }
         }
       }
     },
-    "Focus score": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "专注指数"
+    "Focus score" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "专注指数"
           }
         }
       }
     },
-    "Focus session started. Sit still for the calibration.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "专注已开始，请先静坐校准。"
+    "Focus session started. Sit still for the calibration." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "专注已开始，请先静坐校准。"
           }
         }
       }
     },
-    "Focus today": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今日专注"
+    "Focus today" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日专注"
           }
         }
       }
     },
-    "Focused": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "专注"
+    "Focused" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "专注"
           }
         }
       }
     },
-    "Focused minutes, last 7 days": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最近 7 天的专注分钟数"
+    "Focused minutes, last 7 days" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近 7 天的专注分钟数"
           }
         }
       }
     },
-    "Focused today: %lld of %lld min": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今天已专注 %1$lld 分钟，目标 %2$lld 分钟"
+    "Focused today: %lld of %lld min" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天已专注 %1$lld 分钟，目标 %2$lld 分钟"
           }
         }
       }
     },
-    "Goal": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "目标"
+    "Goal" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标"
           }
         }
       }
     },
-    "Goal %lld min": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "目标 %lld 分钟"
+    "Goal %lld min" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标 %lld 分钟"
           }
         }
       }
     },
-    "Goal not reached": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "目标未达成"
+    "Goal not reached" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标未达成"
           }
         }
       }
     },
-    "Goal reached": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "目标达成"
+    "Goal reached" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标达成"
           }
         }
       }
     },
-    "Goal: %lld min focused": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "目标：专注 %lld 分钟"
+    "Goal: %lld min focused" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标：专注 %lld 分钟"
           }
         }
       }
     },
-    "Health data isn't available on this device.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "这台设备不支持「健康」数据。"
+    "Health data isn't available on this device." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这台设备不支持「健康」数据。"
           }
         }
       }
     },
-    "Heart rate above baseline": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "心率高于基线"
+    "Heart rate above baseline" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心率高于基线"
           }
         }
       }
     },
-    "Heart rate is off, so Flowbeat can't estimate focus. Turn it on in the Health app on your iPhone (Sharing → Apps → Flowbeat) or in Settings → Health on your watch.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "心率权限已关闭，心流无法估计专注。请在 iPhone 的「健康」App（共享 → App → 心流）或手表的「设置 → 健康」里打开。"
+    "Heart rate is off, so Flowbeat can't estimate focus. Turn it on in the Health app on your iPhone (Sharing → Apps → Flowbeat) or in Settings → Health on your watch." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心率权限已关闭，心流无法估计专注。请在 iPhone 的「健康」App（共享 → App → 心流）或手表的「设置 → 健康」里打开。"
           }
         }
       }
     },
-    "Heart rate variability": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "心率变异性"
+    "Heart rate variability" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心率变异性"
           }
         }
       }
     },
-    "Heart rate, from Health": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "心率（来自「健康」）"
+    "Heart rate, from Health" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心率（来自「健康」）"
           }
         }
       }
     },
-    "Heart rate, motion and your sessions are stored only on this Apple Watch. No account, no servers, no tracking.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "心率、动作和专注记录只保存在这块 Apple Watch 上。没有账号、没有服务器、不追踪。"
+    "History" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "历史"
           }
         }
       }
     },
-    "History": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "历史"
+    "How are you right now?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此刻的状态是？"
           }
         }
       }
     },
-    "How are you right now?": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "此刻的状态是？"
+    "In flow" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心流中"
           }
         }
       }
     },
-    "In flow": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "心流中"
+    "Last 7 days" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近 7 天"
           }
         }
       }
     },
-    "Last 7 days": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最近 7 天"
+    "Longest streak" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最长连续专注"
           }
         }
       }
     },
-    "Longest streak": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "最长连续专注"
+    "Marked: Distracted" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已标记：走神"
           }
         }
       }
     },
-    "Marked: Distracted": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已标记：走神"
+    "Marked: Focused" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已标记：专注"
           }
         }
       }
     },
-    "Marked: Focused": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已标记：专注"
+    "Minutes" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分钟"
           }
         }
       }
     },
-    "Minutes": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "分钟"
+    "Minutes with a focus score of 70 or more. The daily goal sets your streak." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按专注指数 ≥ 70 的分钟数计算。每日目标决定连续达标天数。"
           }
         }
       }
     },
-    "Minutes with a focus score of 70 or more. The daily goal sets your streak.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按专注指数 ≥ 70 的分钟数计算。每日目标决定连续达标天数。"
+    "Motion & Fitness is off, so walking won't pause scoring. Settings → Privacy & Security → Motion & Fitness." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「运动与健身」已关闭，走动时不会自动暂停。设置 → 隐私与安全性 → 运动与健身。"
           }
         }
       }
     },
-    "Motion & Fitness is off, so walking won't pause scoring. Settings → Privacy & Security → Motion & Fitness.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "「运动与健身」已关闭，走动时不会自动暂停。设置 → 隐私与安全性 → 运动与健身。"
+    "Motion & Fitness, to pause while you walk" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "运动与健身：走动时自动暂停"
           }
         }
       }
     },
-    "Motion & Fitness, to pause while you walk": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "运动与健身：走动时自动暂停"
+    "Needs %lld labels of each kind. Still missing: %lld focused, %lld distracted." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "两种标签各需要 %1$lld 个。还差「专注」%2$lld 个、「走神」%3$lld 个。"
           }
         }
       }
     },
-    "Needs %lld labels of each kind. Still missing: %lld focused, %lld distracted.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "两种标签各需要 %1$lld 个。还差「专注」%2$lld 个、「走神」%3$lld 个。"
+    "Needs 10+ scored minutes in one hour" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同一小时内需要 10 分钟以上的数据"
           }
         }
       }
     },
-    "Needs 10+ scored minutes in one hour": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "同一小时内需要 10 分钟以上的数据"
+    "Next, Flowbeat asks for:" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接下来，心流会请求："
           }
         }
       }
     },
-    "Next, Flowbeat asks for:": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "接下来，心流会请求："
+    "No focus session is running." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "现在没有进行中的专注。"
           }
         }
       }
     },
-    "No focus session is running.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "现在没有进行中的专注。"
+    "Not a medical device" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不是医疗设备"
           }
         }
       }
     },
-    "Not a medical device": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "不是医疗设备"
+    "Not a medical device." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不是医疗设备。"
           }
         }
       }
     },
-    "Not a medical device.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "不是医疗设备。"
+    "Nudges" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提醒"
           }
         }
       }
     },
-    "Nudges": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "提醒"
+    "Off" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
           }
         }
       }
     },
-    "Off": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "关闭"
+    "Off track" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "走神了"
           }
         }
       }
     },
-    "Off track": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "走神了"
+    "Personalized" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "个性化"
           }
         }
       }
     },
-    "Personalized": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "个性化"
+    "Personalized scoring" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "个性化打分"
           }
         }
       }
     },
-    "Personalized scoring": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "个性化打分"
+    "Pomodoro" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "番茄钟"
           }
         }
       }
     },
-    "Pomodoro": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "番茄钟"
+    "Pomodoro started. Sit still for the calibration." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "番茄钟已开始，请先静坐校准。"
           }
         }
       }
     },
-    "Pomodoro started. Sit still for the calibration.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "番茄钟已开始，请先静坐校准。"
+    "Preview inside the app" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 app 内预览"
           }
         }
       }
     },
-    "Preview inside the app": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在 app 内预览"
+    "Resumes when you sit" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "坐下自动继续"
           }
         }
       }
     },
-    "Resumes when you sit": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "坐下自动继续"
+    "Scoring paused" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂停计分"
           }
         }
       }
     },
-    "Scoring paused": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "暂停计分"
+    "Session goal" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本次目标"
           }
         }
       }
     },
-    "Session goal": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本次目标"
+    "Session saved. %lld min focused." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已保存，本次专注 %lld 分钟。"
           }
         }
       }
     },
-    "Session saved. %lld min focused.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "已保存，本次专注 %lld 分钟。"
+    "Settings" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置"
           }
         }
       }
     },
-    "Settings": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设置"
+    "Slight" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "小动"
           }
         }
       }
     },
-    "Slight": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "小动"
+    "Start Focus" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始专注"
           }
         }
       }
     },
-    "Start Focus": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开始专注"
+    "Start Focus Session" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始专注"
           }
         }
       }
     },
-    "Start Focus Session": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开始专注"
+    "Start Pomodoro" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始番茄钟"
           }
         }
       }
     },
-    "Start Pomodoro": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "开始番茄钟"
+    "Starts a Pomodoro focus session with your work and break lengths." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按你设置的工作 / 休息时长开始番茄钟。"
           }
         }
       }
     },
-    "Starts a Pomodoro focus session with your work and break lengths.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "按你设置的工作 / 休息时长开始番茄钟。"
+    "Starts a free-run focus session in Flowbeat." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在心流里开始一次自由计时的专注。"
           }
         }
       }
     },
-    "Starts a free-run focus session in Flowbeat.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "在心流里开始一次自由计时的专注。"
+    "Stays on your devices" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数据留在你的设备上"
           }
         }
       }
     },
-    "Stays on your watch": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "数据只在手表上"
+    "Steps" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "步数"
           }
         }
       }
     },
-    "Steps": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "步数"
+    "Still" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "稳"
           }
         }
       }
     },
-    "Still": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "稳"
+    "Stop Focus" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "结束专注"
           }
         }
       }
     },
-    "Stop Focus": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "结束专注"
+    "Stop Focus Session" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "结束专注"
           }
         }
       }
     },
-    "Stop Focus Session": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "结束专注"
+    "Summary" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本次总结"
           }
         }
       }
     },
-    "Summary": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "本次总结"
+    "The score is an estimate for personal reflection. Flowbeat does not diagnose, treat or monitor any health condition." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "专注指数只是一个估计，供你自己参考。心流不做任何诊断、治疗，也不监测任何健康状况。"
           }
         }
       }
     },
-    "The score is an estimate for personal reflection. Flowbeat does not diagnose, treat or monitor any health condition.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "专注指数只是一个估计，供你自己参考。心流不做任何诊断、治疗，也不监测任何健康状况。"
+    "Time in flow" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "心流占比"
           }
         }
       }
     },
-    "Time in flow": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "心流占比"
+    "Today" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天"
           }
         }
       }
     },
-    "Today": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今天"
+    "Today %lld min" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天 %lld 分钟"
           }
         }
       }
     },
-    "Today %lld min": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "今天 %lld 分钟"
+    "Trained on this watch from your Focused / Distracted taps, then blended 50/50 with the built-in score. Nothing leaves the watch. Not validated on real users." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用你点的「专注 / 走神」标签在手表上训练，再和内置分数各占一半混合。数据不离开手表。尚未在真实用户上验证。"
           }
         }
       }
     },
-    "Trained on this watch from your Focused / Distracted taps, then blended 50/50 with the built-in score. Nothing leaves the watch. Not validated on real users.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "用你点的「专注 / 走神」标签在手表上训练，再和内置分数各占一半混合。数据不离开手表。尚未在真实用户上验证。"
+    "Watch face widgets" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表盘小组件"
           }
         }
       }
     },
-    "Watch face widgets": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "表盘小组件"
+    "Work" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工作"
           }
         }
       }
     },
-    "Work": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "工作"
+    "Work %lld" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "第 %lld 轮工作"
           }
         }
       }
     },
-    "Work %lld": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "第 %lld 轮工作"
+    "Wrist motion" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手腕动作"
           }
         }
       }
     },
-    "Wrist motion": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "手腕动作"
+    "Wrist stillness" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手腕静止"
           }
         }
       }
     },
-    "Wrist stillness": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "手腕静止"
+    "Your sessions stay on your Apple Watch and your iPhone. Heart rate is never stored in iCloud. No account, no servers, no tracking." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的专注记录只保存在你的 Apple Watch 和 iPhone 上，心率从不存进 iCloud。没有账号、没有服务器、不追踪。"
           }
         }
       }
     },
-    "min": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "分钟"
+    "min" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分钟"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

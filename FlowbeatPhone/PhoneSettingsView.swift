@@ -47,6 +47,11 @@ struct PhoneSettingsView: View {
                 }
 
                 Section {
+                    HStack(spacing: 12) {
+                        Image("BrandMark").resizable().scaledToFit().frame(width: 40, height: 40)
+                            .accessibilityHidden(true)
+                        Text(verbatim: "Flowbeat").font(.headline)
+                    }
                     LabeledContent("Version", value: Self.version)
                     Text("Flowbeat estimates focus from heart rate and wrist motion. The score is an estimate, not a measurement, and it isn't a medical device.")
                         .font(.footnote).foregroundStyle(.secondary)
