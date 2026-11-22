@@ -104,7 +104,6 @@ struct Ring<Center: View>: View {
 struct StartView: View {
     @EnvironmentObject var session: FocusSession
     @EnvironmentObject var permissions: PermissionCenter
-    @State private var breathe = false
     @State private var showAbout = false
     @AppStorage(AppSettings.Key.pomodoroWork) private var pomodoroWork = PomodoroSettings.defaultWorkMinutes
     @AppStorage(AppSettings.Key.pomodoroBreak) private var pomodoroBreak = PomodoroSettings.defaultBreakMinutes
@@ -131,20 +130,10 @@ struct StartView: View {
     var body: some View {
         ScrollView {
         VStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .stroke(LinearGradient(colors: Theme.flow, startPoint: .topLeading, endPoint: .bottomTrailing),
-                            lineWidth: 5)
-                    .scaleEffect(breathe ? 1 : 0.86)
-                    .opacity(breathe ? 1 : 0.5)
-                Image(systemName: "waveform.path.ecg")
-                    .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(LinearGradient(colors: Theme.flow, startPoint: .leading, endPoint: .trailing))
-            }
-            .frame(width: 64, height: 64)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 2.4).repeatForever()) { breathe = true }
-            }
+            // Flowbeat 标志：心跳线上有一道光像心电图一样流过（BrandPulseView.swift）
+            BrandPulseView()
+                .frame(width: 64, height: 64)
+                .accessibilityHidden(true)
 
             VStack(spacing: 0) {
                 Text("Flowbeat").font(.system(.title2, design: .rounded, weight: .bold))
