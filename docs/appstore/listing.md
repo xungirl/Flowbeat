@@ -10,12 +10,12 @@ v1 scope (changed 2026-11-22): an **iPhone app + Apple Watch app**. The watch ap
 
 | Field | Text | Length / limit |
 |---|---|---|
-| Name | `Flowbeat: Focus Score` | 21 / 30 |
+| Name | `Flowbeat Focus` (registered 2026-11-22; `Flowbeat` was taken) | 14 / 30 |
 | Subtitle | `Focus from heart rate & motion` | 30 / 30 |
 | Promotional text | `Start a session, sit down and work. Your watch shows a live 0–100 focus estimate. Everything stays on your wrist.` | 113 / 170 |
 | Keywords | `focus,flow,concentration,productivity,deep work,study,pomodoro,heart rate,attention,timer,mindful` | 97 / 100 (already covers Pomodoro; unchanged) |
 
-If the name `Flowbeat` is already taken in App Store Connect, fall back to `Flowbeat – Focus Estimate` (25) or `Flowbeat Focus` (14).
+The App Store Connect record is "Flowbeat Focus" (app 1.0, bundle com.xungirl.flowbeat, SKU flowbeat-001). The home-screen name stays "Flowbeat" (CFBundleDisplayName). Build 1.0.0 (1) uploaded 2026-11-22.
 
 **Description** (≤ 4000)
 
