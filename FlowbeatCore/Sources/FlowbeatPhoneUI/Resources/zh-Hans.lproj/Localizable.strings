@@ -18,3 +18,4 @@
 "AI review" = "AI 复盘";
 "%@ · away %lld× · sample" = "%@ · 离座 %lld 次 · 示例";
 "%@ · away %lld×" = "%@ · 离座 %lld 次";
+"Focus score" = "专注分";

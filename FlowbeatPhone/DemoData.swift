@@ -18,9 +18,14 @@ enum DemoData {
             let sessionsToday = back == 0 ? 2 : 1 + Int(rng.next() % 2)
             for i in 0..<sessionsToday {
                 let hour = [9, 10, 14, 20][Int(rng.next() % 4)] + i * 2
-                guard let start = cal.date(byAdding: .minute, value: hour * 60 + Int(rng.next() % 40), to: day),
-                      start < Date() else { continue }
                 let minutes = 20 + Int(rng.next() % 40)
+                // 今天的记录放在「现在」之前（截图时间不固定，过了午夜也要有今天的数据）
+                let start: Date
+                if back == 0 {
+                    start = Date().addingTimeInterval(-Double((i + 1) * 75 * 60))
+                } else if let d = cal.date(byAdding: .minute, value: hour * 60 + Int(rng.next() % 40), to: day) {
+                    start = d
+                } else { continue }
                 let pomodoro = rng.next() % 3 == 0
                 let record = makeRecord(start: start, minutes: minutes, rng: &rng,
                                         plan: SessionPlan(mode: pomodoro ? .pomodoro : .free,

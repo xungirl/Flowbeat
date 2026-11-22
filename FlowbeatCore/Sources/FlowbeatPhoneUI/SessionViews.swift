@@ -92,12 +92,17 @@ public struct ScoreTimelineChart: View {
 
 /// 图例：线 = 手表规则分，◆ = AI 判断，竖线 = 你的标签，青色块 = 离座
 public struct TimelineLegend: View {
-    public init() {}
+    /// 没有 AI 判断（上架版本根本没有 AI）时不显示「AI 判断」这一项，免得让人以为 app 里有 AI
+    let showsJudgments: Bool
+
+    public init(showsJudgments: Bool = true) { self.showsJudgments = showsJudgments }
 
     public var body: some View {
         HStack(spacing: 12) {
-            item(Capsule().fill(Color.mint).frame(width: 12, height: 3), "Rule score")
-            item(Image(systemName: "diamond.fill").foregroundStyle(.mint), "AI judgment")
+            item(Capsule().fill(Color.mint).frame(width: 12, height: 3), showsJudgments ? "Rule score" : "Focus score")
+            if showsJudgments {
+                item(Image(systemName: "diamond.fill").foregroundStyle(.mint), "AI judgment")
+            }
             item(Rectangle().fill(Color.orange).frame(width: 2, height: 11), "Your labels")
             item(Rectangle().fill(Color.cyan.opacity(0.3)).frame(width: 10, height: 10), "Away")
         }
@@ -191,7 +196,7 @@ public struct SessionDetailContent: View {
                 VStack(alignment: .leading, spacing: 14) {
                     Text("Focus timeline", bundle: .module).font(.headline)
                     ScoreTimelineChart(timeline: timeline).frame(height: 220)
-                    TimelineLegend()
+                    TimelineLegend(showsJudgments: !timeline.judgments.isEmpty)
                 }
             }
             if !timeline.judgments.isEmpty {

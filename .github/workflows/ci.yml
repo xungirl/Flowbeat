@@ -114,7 +114,7 @@ jobs:
           xcrun simctl install "$IPHONE" dd/Build/Products/Debug-iphonesimulator/FlowbeatPhone.app
           # -demoData: in-memory database with a fixed sample month (simulator builds only)
           shot() { xcrun simctl terminate "$IPHONE" com.xungirl.flowbeat || true
-                   xcrun simctl launch "$IPHONE" com.xungirl.flowbeat -demoData "$@"; sleep 8; }
+                   xcrun simctl launch "$IPHONE" com.xungirl.flowbeat -demoData "$@"; sleep 12; }
           shot -tab 0; xcrun simctl io "$IPHONE" screenshot shots/phone-today.png
           shot -tab 1; xcrun simctl io "$IPHONE" screenshot shots/phone-sessions.png
           shot -tab 1 -openFirst; xcrun simctl io "$IPHONE" screenshot shots/phone-detail.png
