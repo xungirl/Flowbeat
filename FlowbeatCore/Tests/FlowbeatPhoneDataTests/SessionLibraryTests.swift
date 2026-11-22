@@ -51,9 +51,12 @@ final class SessionLibraryTests: XCTestCase {
         XCTAssertEqual(s.sessionMode, .pomodoro)
         XCTAssertEqual(s.goalMinutes, 15)
         XCTAssertEqual(s.goalMet, false)   // 10 分钟 < 15
-        // 完整存档原样保存，可以解回来
-        XCTAssertEqual(s.recordData, data)
-        XCTAssertEqual(s.record()?.samples.count, 1080)
+        // 数据库里（会同步到 iCloud）的存档没有任何心率，其余样本都在
+        let stored = try XCTUnwrap(s.record())
+        XCTAssertEqual(stored.samples.count, 1080)
+        XCTAssertFalse(stored.containsHealthData)
+        XCTAssertTrue(try FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data).containsHealthData)
+        XCTAssertEqual(stored.samples.map(\.score), try FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data).samples.map(\.score))
         // 分钟桶和直接从存档算的一致
         XCTAssertEqual(s.buckets, SessionDigest.make(name: s.name, record: try XCTUnwrap(s.record())).buckets)
     }
@@ -87,11 +90,10 @@ final class SessionLibraryTests: XCTestCase {
     func testRemoveDuplicatesKeepsNewestAndMergesNote() throws {
         let data = try sessionData(start: t0, focused: 60, distracted: 0)
         let older = StoredSession(name: "dup")
-        older.apply(record: try FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data), data: data,
-                    importedAt: t0)
+        older.apply(record: try FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data), importedAt: t0)
         older.note = "从另一台设备来的备注"
         let newer = StoredSession(name: "dup")
-        newer.apply(record: try FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data), data: data,
+        newer.apply(record: try FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data),
                     importedAt: t0.addingTimeInterval(60))
         context.insert(older)
         context.insert(newer)
@@ -164,6 +166,34 @@ final class SessionLibraryTests: XCTestCase {
         XCTAssertEqual(SessionCSV.escape("plain"), "plain")
         XCTAssertEqual(SessionCSV.escape("-5"), "'-5")
         XCTAssertEqual(SessionCSV.escape("two\nlines"), "\"two\nlines\"")
+    }
+
+    /// 带心率的原始文件只在本机原始存档目录里，逐字节一样；删记录时一起删
+    func testRawArchiveKeepsOriginalLocallyAndDeleteRemovesIt() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let raw = RawArchive(directory: dir)
+        let data = try sessionData(start: t0, focused: 60, distracted: 0)
+        try SessionLibrary.upsert(name: "s1.json", data: data, into: context, raw: raw)
+        XCTAssertEqual(raw.read(name: "s1"), data)
+        XCTAssertEqual(try dir.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true)
+
+        let s = try XCTUnwrap(SessionLibrary.all(in: context).first)
+        try SessionLibrary.delete(s, from: context, raw: raw)
+        XCTAssertNil(raw.read(name: "s1"))
+        XCTAssertEqual(try SessionLibrary.all(in: context).count, 0)
+    }
+
+    func testWithoutHealthDataClearsWindowsToo() {
+        let w = WindowSummary(minuteOfSession: 1, localTime: "10:00", baselineHr: 62, hrMean: 70, hrMin: 65,
+                              hrMax: 80, hrTrend: 3, motionMean: 0.01, motionMax: 0.02, stillRatio: 0.9,
+                              awaySeconds: 0, ruleScoreMean: 88, hrvSdnnMs: 45, hrvAgeMin: 2)
+        let r = SessionRecord(samples: [], windows: [w], judgments: [], review: nil)
+        XCTAssertTrue(r.containsHealthData)
+        let clean = r.withoutHealthData()
+        XCTAssertFalse(clean.containsHealthData)
+        XCTAssertEqual(clean.windows[0].ruleScoreMean, 88)
+        XCTAssertEqual(clean.windows[0].stillRatio, 0.9)
     }
 
     func testAppContainerFallsBackWhenNoCloudKit() {

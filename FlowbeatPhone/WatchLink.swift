@@ -51,7 +51,7 @@ final class WatchLink: NSObject, ObservableObject {
     private func importSession(name: String, data: Data) {
         guard let context = container?.mainContext else { return }
         do {
-            try SessionLibrary.upsert(name: name, data: data, into: context)
+            try SessionLibrary.upsert(name: name, data: data, into: context, raw: PhoneStorage.raw)
             lastReceived = Date()
             receivedThisLaunch += 1
             lastError = nil

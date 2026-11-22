@@ -35,7 +35,8 @@ public final class StoredSession {
     public var importedAt: Date = Date.distantPast
     /// `[MinuteBucket]` 的 JSON：历史统计、30 天趋势只读它
     public var bucketsData: Data?
-    /// 完整的 `SessionRecord` JSON（和手表存档文件逐字节一样），详情页和导出用
+    /// 去掉心率 / HRV 之后的 `SessionRecord` JSON（`withoutHealthData()`），详情页用。
+    /// 这一份会随 iCloud 同步，所以不能有健康数据（审核指南 5.1.3(ii)）；带心率的原始存档见 `RawArchive`
     @Attribute(.externalStorage) public var recordData: Data?
 
     public init(name: String) {
@@ -63,8 +64,8 @@ public final class StoredSession {
     /// 给 FocusHistory 用的摘要（和手表历史页同一套算法：今天、7 天、连续达标、最佳时段）
     public var digest: SessionDigest { SessionDigest(name: name, start: start, buckets: buckets) }
 
-    /// 用一份存档覆盖所有从手表来的字段（备注不动）
-    func apply(record: SessionRecord, data: Data, importedAt: Date) {
+    /// 用一份存档覆盖所有从手表来的字段（备注不动）。存进 `recordData` 的是去掉健康数据的版本
+    func apply(record: SessionRecord, importedAt: Date) {
         let samples = record.samples
         start = samples.first?.t ?? Date.distantPast
         end = samples.last?.t ?? start
@@ -78,7 +79,7 @@ public final class StoredSession {
         mode = (record.plan?.mode ?? .free).rawValue
         goalMinutes = record.plan?.goalMinutes
         bucketsData = try? FlowbeatJSON.sessionEncoder.encode(SessionDigest.make(name: name, record: record).buckets)
-        recordData = data
+        recordData = try? FlowbeatJSON.sessionEncoder.encode(record.withoutHealthData())
         self.importedAt = importedAt
     }
 }

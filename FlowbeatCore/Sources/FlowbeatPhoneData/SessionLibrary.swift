@@ -37,6 +37,32 @@ public enum FlowbeatStore {
     }
 }
 
+/// 带心率的原始存档（和手表上的文件逐字节一样）：只存在这台 iPhone 上，不进数据库、不进 iCloud，
+/// 也不进 iCloud 云备份（`isExcludedFromBackup`）。导出 JSON 时用它，没有就用数据库里去掉健康数据的版本。
+public struct RawArchive {
+    public let directory: URL
+
+    public init(directory: URL) { self.directory = directory }
+
+    func url(for name: String) -> URL {
+        directory.appendingPathComponent(SessionLibrary.normalizedName(name) + ".json")
+    }
+
+    public func write(_ data: Data, name: String) throws {
+        var dir = directory
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        try? dir.setResourceValues(values)
+        try data.write(to: url(for: name), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        // 不用 .completeFileProtection：手表的文件可能在锁屏时后台传到，那时写不进去
+    }
+
+    public func read(name: String) -> Data? { try? Data(contentsOf: url(for: name)) }
+
+    public func remove(name: String) { try? FileManager.default.removeItem(at: url(for: name)) }
+}
+
 /// 导入、去重、统计、导出。全部是对 ModelContext 的操作，测试里用内存容器跑。
 public enum SessionLibrary {
     public enum ImportResult: Equatable {
@@ -45,11 +71,13 @@ public enum SessionLibrary {
     }
 
     /// 收到手表的一份存档：同名的就更新（备注保留），没有就新建。坏文件抛错，不写库。
+    /// 数据库里存去掉健康数据的版本；给了 `raw` 就把原始文件（带心率）存到本机的原始存档目录。
     @discardableResult
     public static func upsert(name rawName: String, data: Data, into context: ModelContext,
-                              now: Date = Date()) throws -> ImportResult {
+                              raw: RawArchive? = nil, now: Date = Date()) throws -> ImportResult {
         let record = try FlowbeatJSON.sessionDecoder.decode(SessionRecord.self, from: data)
         let name = normalizedName(rawName)
+        try raw?.write(data, name: name)
         let existing = try sessions(named: name, in: context)
         let result: ImportResult
         let target: StoredSession
@@ -66,7 +94,7 @@ public enum SessionLibrary {
             context.insert(target)
             result = .inserted
         }
-        target.apply(record: record, data: data, importedAt: now)
+        target.apply(record: record, importedAt: now)
         try context.save()
         return result
     }
@@ -86,6 +114,13 @@ public enum SessionLibrary {
     /// 全部记录，最新的在前
     public static func all(in context: ModelContext) throws -> [StoredSession] {
         try context.fetch(FetchDescriptor<StoredSession>(sortBy: [SortDescriptor(\.start, order: .reverse)]))
+    }
+
+    /// 删除一条记录（和它在本机的原始存档）。手表不会再传回来（手表的账本里记着已送达）
+    public static func delete(_ session: StoredSession, from context: ModelContext, raw: RawArchive? = nil) throws {
+        raw?.remove(name: session.name)
+        context.delete(session)
+        try context.save()
     }
 
     /// 同名的只留最近导入的一条（备注不为空的优先保留它的备注）。返回删掉了几条
@@ -110,13 +145,15 @@ public enum SessionLibrary {
     /// 旧版 iPhone 端把存档存成 Documents/sessions/*.json，第一次启动新版时导进数据库。
     /// 导入成功的文件删掉（数据库里有一份逐字节相同的），解析失败的留着不动。返回导入了几条
     @discardableResult
-    public static func importLegacyArchive(directory: URL, into context: ModelContext, now: Date = Date()) -> Int {
+    public static func importLegacyArchive(directory: URL, into context: ModelContext, raw: RawArchive? = nil,
+                                           now: Date = Date()) -> Int {
         let fm = FileManager.default
         guard let files = try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else { return 0 }
         var count = 0
         for url in files where url.pathExtension == "json" {
             guard let data = try? Data(contentsOf: url),
-                  (try? upsert(name: url.lastPathComponent, data: data, into: context, now: now)) != nil else { continue }
+                  (try? upsert(name: url.lastPathComponent, data: data, into: context, raw: raw, now: now)) != nil
+            else { continue }
             try? fm.removeItem(at: url)
             count += 1
         }

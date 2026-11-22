@@ -73,7 +73,7 @@ struct PhoneSettingsView: View {
     private var storageFooter: LocalizedStringKey {
         switch storageLocation {
         case .iCloud:
-            return "Sessions sync to your private iCloud database, so a new iPhone gets them back. Only your Apple Account can read them. Turn it off in iOS Settings → your name → iCloud."
+            return "Focus scores, labels and notes sync to your private iCloud database, so a new iPhone gets them back. Only your Apple Account can read them. Heart rate is never stored in iCloud; it stays on this iPhone and your watch. Turn sync off in iOS Settings → your name → iCloud."
         case .local:
             return "Sessions are stored only on this iPhone."
         case .inMemory:

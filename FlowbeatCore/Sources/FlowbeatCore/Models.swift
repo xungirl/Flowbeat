@@ -245,3 +245,37 @@ public enum FlowbeatJSON {
         return d
     }
 }
+
+// MARK: - 去掉健康数据（iCloud 同步用）
+
+extension SessionRecord {
+    /// 去掉所有来自 HealthKit 的数值（逐秒心率、窗口里的心率统计和 HRV），其余原样保留。
+    ///
+    /// App Store 审核指南 5.1.3(ii)：不能把个人健康信息存进 iCloud。iPhone 端同步到 iCloud 的是这个版本
+    /// （专注分数、手腕动作、离座、标签、时间）；带心率的完整存档只留在手表和 iPhone 本地。
+    public func withoutHealthData() -> SessionRecord {
+        let samples = self.samples.map {
+            FocusSample(t: $0.t, heartRate: nil, motion: $0.motion, score: $0.score, label: $0.label,
+                        away: $0.away, onBreak: $0.onBreak)
+        }
+        let windows = self.windows.map { w -> WindowSummary in
+            var w = w
+            w.baselineHr = nil
+            w.hrMean = nil
+            w.hrMin = nil
+            w.hrMax = nil
+            w.hrTrend = nil
+            w.hrvSdnnMs = nil
+            w.hrvAgeMin = nil
+            return w
+        }
+        return SessionRecord(samples: samples, windows: windows, judgments: judgments, review: review,
+                             timeline: timeline, plan: plan)
+    }
+
+    /// 有没有任何健康数值（测试和自检用）
+    public var containsHealthData: Bool {
+        samples.contains { $0.heartRate != nil }
+            || windows.contains { [$0.baselineHr, $0.hrMean, $0.hrMin, $0.hrMax, $0.hrTrend, $0.hrvSdnnMs].contains { $0 != nil } || $0.hrvAgeMin != nil }
+    }
+}

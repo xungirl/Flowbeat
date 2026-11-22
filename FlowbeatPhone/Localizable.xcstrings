@@ -227,6 +227,16 @@
         }
       }
     },
+    "Focus scores, labels and notes sync to your private iCloud database, so a new iPhone gets them back. Only your Apple Account can read them. Heart rate is never stored in iCloud; it stays on this iPhone and your watch. Turn sync off in iOS Settings → your name → iCloud.": {
+      "localizations": {
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "专注分数、标签和备注会同步到你的 iCloud 私有数据库，换新 iPhone 也能找回，只有你的 Apple 账户能读取。心率从不存进 iCloud，只留在这台 iPhone 和你的手表上。可以在 iOS 设置 → 你的名字 → iCloud 中关闭同步。"
+          }
+        }
+      }
+    },
     "Focused in total": {
       "localizations": {
         "zh-Hans": {
@@ -483,16 +493,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "在 Apple Watch 上结束专注后，记录会出现在这里。"
-          }
-        }
-      }
-    },
-    "Sessions sync to your private iCloud database, so a new iPhone gets them back. Only your Apple Account can read them. Turn it off in iOS Settings → your name → iCloud.": {
-      "localizations": {
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "专注记录同步到你的 iCloud 私有数据库，换新 iPhone 也能找回，只有你的 Apple 账户能读取。可以在 iOS 设置 → 你的名字 → iCloud 中关闭。"
           }
         }
       }

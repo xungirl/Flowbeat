@@ -40,8 +40,9 @@ struct SessionsView: View {
                                     NavigationLink(value: s) { StoredSessionRow(session: s) }
                                 }
                                 .onDelete { offsets in
-                                    offsets.map { group.items[$0] }.forEach(context.delete)
-                                    try? context.save()
+                                    for s in offsets.map({ group.items[$0] }) {
+                                        try? SessionLibrary.delete(s, from: context, raw: PhoneStorage.raw)
+                                    }
                                 }
                             } header: {
                                 Text(group.day.formatted(.dateTime.weekday(.wide).month().day()))
@@ -161,8 +162,7 @@ struct SessionDetailView: View {
         }
         .confirmationDialog("Delete this session?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
-                context.delete(session)
-                try? context.save()
+                try? SessionLibrary.delete(session, from: context, raw: PhoneStorage.raw)
                 dismiss()
             }
         } message: {
@@ -178,9 +178,9 @@ struct SessionDetailView: View {
         .onDisappear { try? context.save() }
     }
 
-    /// 导出的是和手表存档一样的 JSON（逐秒样本），文件名是开始时间
+    /// 导出和手表存档一样的 JSON（逐秒样本，本机有原始存档时带心率），文件名是开始时间
     static func writeExport(_ s: StoredSession) -> URL? {
-        guard let data = s.recordData else { return nil }
+        guard let data = PhoneStorage.raw.read(name: s.name) ?? s.recordData else { return nil }
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("Flowbeat-\(s.name).json")
         return (try? data.write(to: url, options: .atomic)) != nil ? url : nil
     }

@@ -43,7 +43,7 @@ struct FlowbeatPhoneApp: App {
     @MainActor private static func migrateLegacyArchive(into context: ModelContext) {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         SessionLibrary.importLegacyArchive(directory: docs.appendingPathComponent("sessions", isDirectory: true),
-                                           into: context)
+                                           into: context, raw: PhoneStorage.raw)
         _ = try? SessionLibrary.removeDuplicates(in: context)
     }
 }
@@ -66,6 +66,14 @@ struct RootView: View {
         }
         .tint(.mint)
     }
+}
+
+/// 带心率的原始存档目录（只在本机，不进 iCloud、不进云备份），见 FlowbeatPhoneData.RawArchive
+enum PhoneStorage {
+    static let raw: RawArchive = {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        return RawArchive(directory: base.appendingPathComponent("RawSessions", isDirectory: true))
+    }()
 }
 
 /// 打包进 app 的示例（手表模拟器演示模式生成的 4 分钟），只用来展示，不写进数据库
