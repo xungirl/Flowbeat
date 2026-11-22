@@ -10,7 +10,7 @@
       distraction nudge, Pomodoro lengths, session/daily goals and personalized scoring; AI label
       store in Debug builds only).
     Not used: file timestamp APIs, system boot time, disk space, active keyboards.
-    The App Group (group.com.xungirl.flowbeat) is used only for one plain JSON file that the
+    The App Group (group.com.xungirl.flowbeat.shared) is used only for one plain JSON file that the
     widget extension on the same watch reads (widget-snapshot.json); no UserDefaults suite, so
     reason 1C8F.1 is not needed. The widget has its own manifest (FlowbeatWidgets/PrivacyInfo.xcprivacy).
   - Session history, the per-minute history cache and the personalized model are computed and

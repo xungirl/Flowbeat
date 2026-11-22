@@ -27,20 +27,20 @@ The original watch-only analysis is kept below for reference.
 | Device testing needed | 1 watch | A paired iPhone + watch, plus transfer-failure cases |
 | Later | Add the iPhone app in v1.1 once WatchConnectivity works on a real pair | — |
 
-Both are already configured. The two watch targets share all source files and the bundle ID `com.xungirl.flowbeat.watchkitapp`, and differ only in Info.plist:
+Both are already configured. The two watch targets share all source files and the bundle ID `com.xungirl.flowbeat.watch`, and differ only in Info.plist:
 - `Flowbeat` sets `WKWatchOnly = YES`.
 - `FlowbeatWatchCompanion` sets `WKCompanionAppBundleIdentifier = com.xungirl.flowbeat` + `WKRunsIndependentlyOfCompanionApp = YES`.
 
 watchOS refuses to install an app that declares both `WKWatchOnly` and `WKRunsIndependentlyOfCompanionApp` (seen in the simulator).
 
-> ⚠️ **Unverified:** how App Store Connect treats a later move from watch-only to "iOS app + watch app" under the same app record. Before committing to it, check Apple's current docs on adding an iOS app to an existing watch-only app. The bundle IDs are already laid out the way Xcode's templates do (`<ios-id>.watchkitapp`), so no ID change should be needed.
+> ⚠️ **Unverified:** how App Store Connect treats a later move from watch-only to "iOS app + watch app" under the same app record. Before committing to it, check Apple's current docs on adding an iOS app to an existing watch-only app. The bundle IDs are already laid out the way Xcode's templates do (`<ios-id>.watch`), so no ID change should be needed.
 
 ## 1. Team ID → signing (5 min)
 
 1. developer.apple.com → Account → **Membership details** → copy the **Team ID** (10 characters).
 2. Paste it into `Config/Signing.xcconfig`: `DEVELOPMENT_TEAM = AB12CD34EF`. Commit it (a Team ID isn't secret).
 3. `xcodegen generate && open Flowbeat.xcodeproj`.
-4. In the `Flowbeat` target, open **Signing & Capabilities**. It should show your team, "Automatically manage signing", the **HealthKit** capability and **App Groups** with `group.com.xungirl.flowbeat` ticked, with no red errors. Do the same for the `FlowbeatWidgets` target (App Groups only). Xcode registers the App IDs on first build to a device.
+4. In the `Flowbeat` target, open **Signing & Capabilities**. It should show your team, "Automatically manage signing", the **HealthKit** capability and **App Groups** with `group.com.xungirl.flowbeat.shared` ticked, with no red errors. Do the same for the `FlowbeatWidgets` target (App Groups only). Xcode registers the App IDs on first build to a device.
 
 ✅ Done when an Xcode build to your watch succeeds with automatic signing.
 
@@ -48,9 +48,9 @@ watchOS refuses to install an app that declares both `WKWatchOnly` and `WKRunsIn
 
 Automatic signing usually does this for you. Check it at developer.apple.com → Certificates, IDs & Profiles → Identifiers:
 
-- [ ] `com.xungirl.flowbeat.watchkitapp`, with **HealthKit** and **App Groups** checked. Leave "Clinical Health Records" and "Background Delivery" off; neither is used.
-- [ ] **App Group `group.com.xungirl.flowbeat`**: Identifiers → "+" → App Groups → description "Flowbeat", identifier `group.com.xungirl.flowbeat`. Then edit both App IDs (watch app and widget) → App Groups → Configure → tick it. Automatic signing can create the group too, but check that it exists under *your* Team ID: the identifier in `project.yml`, both `.entitlements` files and `FlowbeatCore/…/WidgetSnapshot.swift` (`AppGroup.identifier`) must match exactly. If the name is taken, pick another and change all four places.
-- [ ] `com.xungirl.flowbeat.watchkitapp.widgets` (widget extension), with **App Groups** checked.
+- [ ] `com.xungirl.flowbeat.watch`, with **HealthKit** and **App Groups** checked. Leave "Clinical Health Records" and "Background Delivery" off; neither is used.
+- [ ] **App Group `group.com.xungirl.flowbeat.shared`**: Identifiers → "+" → App Groups → description "Flowbeat", identifier `group.com.xungirl.flowbeat.shared`. Then edit both App IDs (watch app and widget) → App Groups → Configure → tick it. Automatic signing can create the group too, but check that it exists under *your* Team ID: the identifier in `project.yml`, both `.entitlements` files and `FlowbeatCore/…/WidgetSnapshot.swift` (`AppGroup.identifier`) must match exactly. If the name is taken, pick another and change all four places.
+- [ ] `com.xungirl.flowbeat.watch.widgets` (widget extension), with **App Groups** checked.
 - [ ] (Only if you ship the companion) `com.xungirl.flowbeat`. No capabilities needed.
 - [ ] App Store Connect → **My Apps → + New App**: platform **watchOS** (watch-only), name from `listing.md`, primary language English (U.S.), bundle ID as offered for the watch app, SKU e.g. `flowbeat-1`.
   - ⚠️ For a watch-only app, App Store Connect / Xcode may want the record's bundle ID to be the parent (`com.xungirl.flowbeat`) with the watch app inside an Xcode-generated stub. **Not verified locally:** archiving needs signing. If Organizer's validation complains, follow its message on which bundle ID the record needs, and register that ID too.
@@ -131,7 +131,7 @@ If 5–7 fail (the app is suspended or the battery drain is unacceptable), stop 
 
 ## What only the developer can do
 
-1. Paste the Team ID (step 1), and register the App Group `group.com.xungirl.flowbeat` plus the widget App ID under it (step 2).
+1. Paste the Team ID (step 1), and register the App Group `group.com.xungirl.flowbeat.shared` plus the widget App ID under it (step 2).
 2. Run the real-device test plan (step 3) and record the results.
 3. Host the privacy policy and support page and fill in the contact email.
 4. Archive, upload, fill App Store Connect and submit (steps 6–8).

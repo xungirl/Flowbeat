@@ -255,7 +255,7 @@ v1 新功能（第六部分）全在手表本地，接在这张图的「每秒�
 **(b) 为什么**
 - **视图为什么放在 Swift package（`FlowbeatPhoneUI`）里？** 这台开发机没有 iOS 模拟器运行时（下载要好几 GB，超出项目范围）。视图放在 package 里就能在 macOS 上编译，用 `ImageRenderer` 渲染 README 截图（`swift run render-snapshots`）；iOS app 的真实构建和模拟器截图放在 GitHub Actions 上做。
 - `List`、导航栏这类系统容器放在 iOS target 里，因为 `ImageRenderer` 渲染不了它们。
-- 手表 app 的 bundle id 改成 `com.xungirl.flowbeat.watchkitapp`（必须以 iPhone app 的 id 为前缀），加 `WKCompanionAppBundleIdentifier`，并设 `WKRunsIndependentlyOfCompanionApp = YES`，没有 iPhone 也能独立用。
+- 手表 app 的 bundle id 改成 `com.xungirl.flowbeat.watch`（必须以 iPhone app 的 id 为前缀），加 `WKCompanionAppBundleIdentifier`，并设 `WKRunsIndependentlyOfCompanionApp = YES`，没有 iPhone 也能独立用。
 
 **(c) 语法**
 - `Chart { ForEach(...) { LineMark(x: .value("分钟", m), y: .value("专注分", s), series: .value("段", seg)) } }`：`series` 让同一个 Chart 画多条不相连的线。
@@ -530,7 +530,7 @@ v1 的产品决定：**手表优先、完全本地、不联网**。上架版只�
 - 四种尺寸：`accessoryCircular`（容量环 + 分钟数）、`accessoryRectangular`（分钟 / 目标 + 进度条 + 连续天数）、`accessoryInline`、`accessoryCorner`。点一下打开 app。
 - 数据：手表 app 把 `WidgetSnapshot`（最近 60 天、每 15 分钟一个桶 + 每日目标）写成 App Group 容器里的 `widget-snapshot.json`；小组件读它，用和历史页**同一个** `FocusHistory.summary` 现算「今天」。
 - 时间线：现在一条 + 下一个当地午夜一条（今天归零），`policy: .atEnd`。专注结束、改每日目标时，app 调 `WidgetCenter.shared.reloadAllTimelines()`，而且只在快照内容真的变了时才调。
-- App Group：`group.com.xungirl.flowbeat`，两个 entitlements 文件里都有；**要在开发者后台用 Team ID 注册**。
+- App Group：`group.com.xungirl.flowbeat.shared`，两个 entitlements 文件里都有；**要在开发者后台用 Team ID 注册**。
 
 **(b) 为什么**
 - **为什么不直接存「今天 42 分钟」？** 小组件要自己判断「今天」：过了午夜要显示 0、换了时区今天也会变，而那时 app 不一定在运行。存原始桶，让小组件现算，就和历史页永远一致。

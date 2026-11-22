@@ -8,7 +8,7 @@
 	<array/>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.xungirl.flowbeat</string>
+		<string>group.com.xungirl.flowbeat.shared</string>
 	</array>
 </dict>
 </plist>

@@ -28,7 +28,7 @@ settings:
 # 手表 app 有两种打包方式，源代码完全相同，只差 Info.plist 里的两个键：
 # - Flowbeat：独立手表 app（WKWatchOnly），v1 推荐的上架方式，没有 iPhone app
 # - FlowbeatWatchCompanion：嵌进 iPhone app（FlowbeatPhone）的伴侣版，声明 WKCompanionAppBundleIdentifier
-# 两个 target 的 bundle id 相同（com.xungirl.flowbeat.watchkitapp），所以以后从独立版换成伴侣版不用换 App ID。
+# 两个 target 的 bundle id 相同（com.xungirl.flowbeat.watch），所以以后从独立版换成伴侣版不用换 App ID。
 targetTemplates:
   WatchApp:
     type: application
@@ -45,7 +45,7 @@ targetTemplates:
       base:
         PRODUCT_NAME: Flowbeat
         PRODUCT_MODULE_NAME: Flowbeat
-        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat.watch
         GENERATE_INFOPLIST_FILE: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
@@ -76,7 +76,7 @@ targetTemplates:
         com.apple.developer.healthkit: true
         com.apple.developer.healthkit.access: []
         # 和小组件共享 widget-snapshot.json。App Group 要在开发者后台用 Team ID 注册（见 submission-checklist.md）
-        com.apple.security.application-groups: [group.com.xungirl.flowbeat]
+        com.apple.security.application-groups: [group.com.xungirl.flowbeat.shared]
 
 targets:
   # v1 上架用：独立手表 app
@@ -109,7 +109,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: FlowbeatWidgets
-        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat.watchkitapp.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.xungirl.flowbeat.watch.widgets
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Flowbeat
         CODE_SIGN_STYLE: Automatic
@@ -125,7 +125,7 @@ targets:
     entitlements:
       path: FlowbeatWidgets/FlowbeatWidgets.entitlements
       properties:
-        com.apple.security.application-groups: [group.com.xungirl.flowbeat]
+        com.apple.security.application-groups: [group.com.xungirl.flowbeat.shared]
   FlowbeatPhone:
     type: application
     platform: iOS

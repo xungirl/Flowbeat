@@ -141,7 +141,7 @@ scripts/appstore_screenshots.sh            # EN + 中文 screenshots of the Rele
 - English is the development language, with Simplified Chinese translations: String Catalogs for the watch and iPhone apps, `.strings` in the `FlowbeatPhoneUI` package, `InfoPlist.strings` for the app name and permission texts.
 - A first-launch disclaimer (what it estimates / not a medical device / data stays on the watch). It asks for permissions only after the explanation, handles denial without dead ends, and can be reopened from an About button.
 - `PrivacyInfo.xcprivacy` declares no tracking, no collected data and `UserDefaults` (CA92.1) as the only required-reason API. The widget extension has its own manifest with no required-reason APIs: the App Group is used through one plain JSON file, not a `UserDefaults` suite (which would need reason 1C8F.1).
-- App Group `group.com.xungirl.flowbeat` (watch app + widget). **It must be registered under the Team ID** once the account exists (checklist step 2).
+- App Group `group.com.xungirl.flowbeat.shared` (watch app + widget). **It must be registered under the Team ID** once the account exists (checklist step 2).
 - `WKBackgroundModes: workout-processing` and the HealthKit entitlement are kept for the `HKWorkoutSession`.
 
 **App Store package** in [`docs/appstore/`](docs/appstore/):
@@ -374,10 +374,10 @@ open Flowbeat.xcodeproj
 ```
 
 Targets (all depend on the local `FlowbeatCore` package):
-- `Flowbeat`: watchOS 10+, bundle `com.xungirl.flowbeat.watchkitapp`, watch-only (v1).
+- `Flowbeat`: watchOS 10+, bundle `com.xungirl.flowbeat.watch`, watch-only (v1).
 - `FlowbeatWatchCompanion`: the same sources and bundle ID, as a companion.
 - `FlowbeatPhone`: iOS 17+, bundle `com.xungirl.flowbeat`, embeds `FlowbeatWatchCompanion`.
-- `FlowbeatWidgets`: watchOS WidgetKit extension, bundle `com.xungirl.flowbeat.watchkitapp.widgets`, embedded in both watch targets.
+- `FlowbeatWidgets`: watchOS WidgetKit extension, bundle `com.xungirl.flowbeat.watch.widgets`, embedded in both watch targets.
 
 Debug = AI judge on; Release = AI off.
 
@@ -397,7 +397,7 @@ Debug = AI judge on; Release = AI off.
 - With an unsigned build there is no App Group, so the widget shows 0. Build with `CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual` (ad-hoc) to get the App Group container in the simulator.
 
 ```bash
-xcrun simctl launch <watch-udid> com.xungirl.flowbeat.watchkitapp -demo -demoLabels -demoStopAfter 245
+xcrun simctl launch <watch-udid> com.xungirl.flowbeat.watch -demo -demoLabels -demoStopAfter 245
 ```
 
 **iPhone screenshots:**
@@ -508,7 +508,7 @@ Stages 1–6 happened on 2026-11-11, stages 7–12 on 2026-11-12, stages 13–17
 - **Goal:** the roadmap's "sync sessions and chart your focus timeline".
 - **Decision:**
   - `WCSession.transferFile` rather than `sendMessage`: the system queues it and delivers in the background when the phone is away.
-  - The watch app becomes a companion (`…flowbeat.watchkitapp`) but keeps `WKRunsIndependentlyOfCompanionApp`.
+  - The watch app becomes a companion (`…flowbeat.watch`) but keeps `WKRunsIndependentlyOfCompanionApp`.
   - The chart views live in a package library (`FlowbeatPhoneUI`) so they compile on macOS.
 - **Built:**
   - Pure, tested `SessionTimeline`: 10 s buckets, line breaks at gaps, labels, away spans, AI judgments placed by each window's exact end second.
@@ -699,7 +699,7 @@ Caveat: the comparison is a smoke test (6 synthetic windows, 2–3 runs per cell
 
 ### Next steps
 - **When the developer account is approved:** paste the Team ID into `Config/Signing.xcconfig`, run the real-device test plan in [`docs/appstore/submission-checklist.md`](docs/appstore/submission-checklist.md) (HR sample rate, battery drain per hour, background survival, permission flows, a 30-min session), then TestFlight → submit.
-- **Also on the Team ID:** register the App Group `group.com.xungirl.flowbeat` and the widget App ID (checklist step 2), then run the new device tests 14–21 (haptics, Pomodoro with the wrist down, complications, Siri, double tap, personalization).
+- **Also on the Team ID:** register the App Group `group.com.xungirl.flowbeat.shared` and the widget App ID (checklist step 2), then run the new device tests 14–21 (haptics, Pomodoro with the wrist down, complications, Siri, double tap, personalization).
 - Collect ≥ 10 labeled sessions, then measure the rule score, the personal model (held-out sessions, not training accuracy) and the LLM judge against the labels (accuracy / F1). Tune the nudge threshold, the 8-label minimum and the 50/50 blend from that data.
 - Test WatchConnectivity on the real pair (checklist 22–26); the iPhone app ships in v1. Add rate limiting and HTTPS before any backend deployment.
 

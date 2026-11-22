@@ -9,7 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-BUNDLE=com.xungirl.flowbeat.watchkitapp
+BUNDLE=com.xungirl.flowbeat.watch
 OUT=docs/appstore/screenshots
 DD=build/dd
 MODELS=("Apple Watch Ultra 2 (49mm)" "Apple Watch Series 10 (46mm)")

@@ -69,5 +69,5 @@ public struct WidgetSnapshot: Codable, Equatable, Sendable {
 /// App Group 的标识。两边（手表 app、小组件扩展）的 entitlements 里都要有它，
 /// 并且要在开发者后台用 Team ID 注册（见 docs/appstore/submission-checklist.md）。
 public enum AppGroup {
-    public static let identifier = "group.com.xungirl.flowbeat"
+    public static let identifier = "group.com.xungirl.flowbeat.shared"
 }

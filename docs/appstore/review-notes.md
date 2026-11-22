@@ -43,8 +43,8 @@ Contact: [contact email]
 
 ## Capabilities added after the first draft (2026-11-13)
 
-- **App Group `group.com.xungirl.flowbeat`** (watch app + widget extension): one JSON file the complication reads (today's focused minutes, daily goal). Same device, no network. Must be registered under the Team ID before archiving (see the checklist).
-- **WidgetKit extension** (`com.xungirl.flowbeat.watchkitapp.widgets`): accessory complications / Smart Stack. Static timeline (now + next midnight), reloaded by the app when a session ends.
+- **App Group `group.com.xungirl.flowbeat.shared`** (watch app + widget extension): one JSON file the complication reads (today's focused minutes, daily goal). Same device, no network. Must be registered under the Team ID before archiving (see the checklist).
+- **WidgetKit extension** (`com.xungirl.flowbeat.watch.widgets`): accessory complications / Smart Stack. Static timeline (now + next midnight), reloaded by the app when a session ends.
 - **App Intents / App Shortcuts:** no SiriKit entitlement is needed for App Shortcuts. The start intents open the app because the workout session must start in the foreground; Stop runs in the background while a session is active.
 - **Not used:** `StartWorkoutIntent` (the Ultra Action button's workout slot). Flowbeat isn't a workout app, so it doesn't claim that slot; Ultra users can still bind the "Start Focus" shortcut via Settings → Action Button → Shortcut.
 - **Haptics:** `WKInterfaceDevice.play` only while a session is in the foreground or running as a workout session; no notifications are used.
