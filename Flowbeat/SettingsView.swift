@@ -54,7 +54,10 @@ struct SettingsView: View {
             personalizationSection
         }
         .navigationTitle("Settings")
-        .onChange(of: dailyGoal) { _, _ in HistoryStore.shared.refresh() }
+        .onChange(of: dailyGoal) { _, new in
+            PhoneSync.shared.dailyGoalChanged(to: new)   // 同步到 iPhone（两边谁后改听谁的）
+            HistoryStore.shared.refresh()
+        }
         .onAppear { history.refresh() }
     }
 
