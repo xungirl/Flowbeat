@@ -5,6 +5,8 @@
   </picture>
 </p>
 
+<h3 align="center">Are you really focused? Let your pulse tell you. 😏</h3>
+
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/brand/app-store-badge-white.svg">
