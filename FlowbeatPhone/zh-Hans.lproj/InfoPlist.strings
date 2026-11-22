@@ -1,2 +1,3 @@
 "CFBundleDisplayName" = "心流";
 "CFBundleName" = "心流";
+"NSMotionUsageDescription" = "识别你是否起身走动，走动时暂停打分，不算作走神。";

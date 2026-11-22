@@ -1,2 +1,3 @@
 "CFBundleDisplayName" = "Flowbeat";
 "CFBundleName" = "Flowbeat";
+"NSMotionUsageDescription" = "Flowbeat detects when you get up and walk, so that time is paused instead of being counted as distraction.";
