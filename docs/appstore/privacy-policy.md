@@ -4,7 +4,7 @@ title: "Flowbeat Privacy Policy · 心流隐私政策"
 
 # Flowbeat Privacy Policy
 
-*Effective date: [publication date] · Applies to Flowbeat 1.x for Apple Watch and iPhone*
+*Effective date: November 22, 2026 · Applies to Flowbeat 1.x for Apple Watch and iPhone*
 
 Flowbeat ("the app") estimates how focused you are from your heart rate and wrist motion. This policy explains what data the app uses and where it goes. In short: **your data stays on your Apple Watch and your iPhone, plus (if you use iCloud) your own private iCloud database, which never contains heart rate. We don't collect, receive, sell or share any of your data.**
 
@@ -62,13 +62,13 @@ If a future version ever sends any data anywhere other than your own devices and
 
 ## Contact
 
-Questions about this policy: [contact email]
+Questions about this policy: xungirl1024@163.com
 
 ---
 
 # 心流隐私政策
 
-*生效日期：[发布日期] · 适用于 Apple Watch 和 iPhone 版心流 1.x*
+*生效日期：2026 年 11 月 22 日 · 适用于 Apple Watch 和 iPhone 版心流 1.x*
 
 心流（以下称「本 app」）根据你的心率和手腕动作估计你有多专注。本政策说明本 app 使用哪些数据、数据去了哪里。一句话：**数据只留在你的 Apple Watch 和 iPhone 上；如果你使用 iCloud，还会存在你自己的 iCloud 私有数据库里，但那里从不包含心率。我们不收集、不接收、不出售、不分享你的任何数据。**
 
@@ -126,4 +126,4 @@ iCloud 中的数据由 Apple 存在你的 Apple 账户下，我们无法访问�
 
 ## 联系方式
 
-关于本政策的问题：[contact email]
+关于本政策的问题：xungirl1024@163.com

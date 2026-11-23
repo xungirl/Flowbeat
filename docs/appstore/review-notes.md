@@ -38,7 +38,7 @@ HOW TO DEMO (about 3 minutes)
    - Siri / Shortcuts: "Start focus in Flowbeat", "Start a Pomodoro in Flowbeat", "Stop focus in Flowbeat".
 If Health access is declined in step 1, the start screen explains how to turn it on and offers "Check again"; the app does not crash or dead-end.
 
-Contact: [contact email]
+Contact: xungirl1024@163.com
 ```
 
 ## Capabilities added after the first draft (2026-11-13)

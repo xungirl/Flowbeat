@@ -112,9 +112,9 @@ If 5–7 fail (the app is suspended or the battery drain is unacceptable), stop 
 - [ ] Category: Productivity / Lifestyle.
 - [ ] Age rating questionnaire as in `listing.md` → 4+.
 - [ ] App Privacy: **Data Not Collected**.
-- [ ] Privacy Policy URL: host `privacy-policy.md` on the blog, replace `[contact email]` and `[publication date]`, and paste the URL.
-- [ ] Support URL.
-- [ ] App Review Information: paste `review-notes.md` and replace `[contact email]`. Sign-in required: **No**. Contact phone/email: yours.
+- [x] Privacy Policy URL: https://xungirl.com/flowbeat/privacy/ (hosted 2026-11-22; rebuild with `scripts/build_privacy_page.py` after editing `privacy-policy.md`).
+- [x] Support URL: https://xungirl.com/flowbeat/support/ (contact xungirl1024@163.com).
+- [ ] App Review Information: paste `review-notes.md` (contact already filled in). Sign-in required: **No**. Contact phone/email: yours.
 - [ ] Pricing: Free. Availability: see China notes below.
 - [ ] Select the TestFlight build for version 1.0.0.
 
