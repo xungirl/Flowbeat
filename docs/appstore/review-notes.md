@@ -6,37 +6,31 @@ Paste the block below into **App Store Connect → App Review Information → No
 Thank you for reviewing Flowbeat.
 
 WHAT IT IS
-Flowbeat is an Apple Watch app with an iPhone companion. The watch shows a live 0–100 focus estimate while the user works or studies; the iPhone app keeps every session and shows trends. The watch app also works without the iPhone. The estimate is computed on the watch from two signals: heart rate (HealthKit) and wrist motion (CoreMotion device motion). The app makes no medical claims, and the first-launch screens state that it is not a medical device and does not diagnose anything.
+An Apple Watch app with an iPhone companion. The watch shows a live 0-100 focus estimate while the user works or studies, computed on the watch from heart rate (HealthKit) and wrist motion (CoreMotion). The iPhone app keeps every session and shows trends. The watch app also works without the iPhone. No medical claims: the first-launch screens state it is not a medical device.
 
 NO ACCOUNT, NO SERVER
-There is no login, no account, no server of ours and no third-party SDK. The apps contain no networking code of their own. Sessions move from the watch to the iPhone with WatchConnectivity (transferFile). On the iPhone they are stored with SwiftData and, if the user has iCloud on, synced to the user's private CloudKit database.
+No login, no account, no server of ours, no third-party SDK, no networking code of our own. Sessions move watch -> iPhone with WatchConnectivity, are stored with SwiftData and, if iCloud is on, sync to the user's private CloudKit database.
 
-HEALTH DATA AND iCLOUD (guideline 5.1.3)
-Heart rate is never stored in iCloud. Before a session is saved to the synced SwiftData store, all heart-rate and heart-rate-variability values are removed; only focus scores, wrist motion, time away, the user's labels and notes are synced. The original file with heart rate stays on the device (watch, and an iPhone folder excluded from iCloud Backup) and is used only when the user exports a session. Health data is not used for advertising and is not shared.
+HEALTH DATA AND iCLOUD (5.1.3)
+Heart rate is never stored in iCloud. All heart-rate and HRV values are removed before a session is saved to the synced store; only focus scores, motion, time away, labels and notes sync. The file with heart rate stays on the device (excluded from iCloud Backup) and is used only for user export. Health data is not used for advertising or shared.
 
 WHY AN HKWorkoutSession (Mind & Body)
-The score needs heart-rate readings every few seconds for the whole focus session (typically 25–90 minutes). Outside a workout, watchOS samples heart rate only occasionally. While the session is active, the user often lowers the wrist, and the app needs to keep running in the background. A workout session is the supported way to get both, so the app declares the "workout-processing" background mode and uses the Mind & Body activity type, which matches a seated, calm activity.
-- The workout session runs only between the user tapping "Start Focus" and "End".
-- When the session ends, the workout is discarded (HKLiveWorkoutBuilder.discardWorkout()). No workout is saved to Health.
-- Health permissions requested: read Heart Rate; share Workouts (required to start a workout session). Nothing else is written to Health.
-- Motion & Fitness is used only to detect walking, so that time away from the desk is paused instead of being scored as distraction. If the user declines it, the app still works and says that walking won't pause scoring.
+The score needs heart rate every few seconds for 25-90 minutes while the wrist is often lowered. Outside a workout, watchOS samples heart rate only occasionally and the app is suspended. A workout session provides both, so the app uses the "workout-processing" background mode with the Mind & Body type, matching a calm seated activity.
+- It runs only between "Start Focus" and "End".
+- At the end the workout is discarded (discardWorkout()); no workout is saved to Health (verified on device).
+- Health permissions: read Heart Rate; share Workouts (required to start a session). Nothing else is written.
+- Motion & Fitness only detects walking, so time away is paused instead of scored. If declined, the app still works.
 
 HOW TO DEMO (about 3 minutes)
-1. Launch Flowbeat on the watch. Read the 4 onboarding pages (scroll with the Digital Crown) and tap Continue on the last one. Allow Health (heart rate + workouts) and Motion & Fitness.
-2. On the start screen, tap "Start Focus". The ring shows a 60-second calibration countdown; sit still while it learns the resting heart rate.
-3. After calibration the ring shows the focus estimate. Keep the wrist still for a high score, or move the hand around for a lower one. Lowering the wrist keeps the session running.
-4. Scroll down (Digital Crown) to the second page. Tap "Focused" or "Distracted" to label the moment, then tap "End".
-5. The summary shows average focus, time in flow, focused minutes, longest focus streak, time away and steps. Tap "Done".
-6. The (i) button on the start screen reopens the "About" / not-a-medical-device screens.
-6b. iPhone: open Flowbeat on the paired iPhone. The session you just ended appears under Sessions (it transfers in the background, usually within a few seconds; keep the watch near the phone). Today shows focused minutes against the daily goal, the last 7 and 30 days and the best time of day. Open the session to see its focus timeline and add a note. Settings → "Export all as CSV". Changing the daily goal on the iPhone updates the watch.
-   If no watch is available: on first launch the iPhone shows "No focus sessions yet" with a "View a sample session" button that opens a bundled example (clearly labeled as sample data).
-7. Optional features (all on-device):
-   - "Pomodoro" on the start screen: 25/5 work/break blocks with a haptic at each switch; scoring pauses during breaks. Lengths and an optional focused-minutes goal are in Settings (gear icon).
-   - Distraction nudge (on by default, Settings): after 3 minutes of a low score the watch plays one light haptic, at most once every 10 minutes, never while walking, calibrating or on a break.
-   - "History" on the start screen: today, last 7 days, daily-goal streak, best time of day.
-   - Watch face: add the "Focus today" complication (Flowbeat) to see today's focused minutes; tapping it opens the app.
-   - Siri / Shortcuts: "Start focus in Flowbeat", "Start a Pomodoro in Flowbeat", "Stop focus in Flowbeat".
-If Health access is declined in step 1, the start screen explains how to turn it on and offers "Check again"; the app does not crash or dead-end.
+1. Open Flowbeat on the watch, read the 4 onboarding pages, tap Continue, allow Health and Motion & Fitness.
+2. Tap "Start Focus". A 60-second calibration learns the resting heart rate; sit still.
+3. The ring then shows the estimate: still wrist = higher, moving the hand = lower. Lowering the wrist keeps the session running.
+4. Scroll to the second page, tap "Focused" or "Distracted", then "End".
+5. The summary shows average focus, focused minutes, longest streak, time away and steps. Tap "Done".
+6. On the paired iPhone, open Flowbeat: the session appears under Sessions within seconds. Today shows minutes vs the daily goal, 7/30 days and best time of day. Open a session to see its timeline and add a note. Settings -> "Export all as CSV".
+   Without a watch: the iPhone shows "View a sample session", a bundled example labeled as sample data.
+Optional (all on-device): Pomodoro (25/5 with haptics), a gentle distraction haptic (at most once per 10 min), History, the "Focus today" complication, and Siri: "Start focus in Flowbeat" / "Stop focus in Flowbeat".
+If Health is declined, the start screen explains how to enable it and offers "Check again".
 
 Contact: xungirl1024@163.com
 ```
