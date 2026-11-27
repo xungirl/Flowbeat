@@ -175,7 +175,7 @@ Expected result: **4+**. The questionnaire's exact wording changes over time, so
 | Support URL (required) | `https://xungirl.com/flowbeat/support/` |
 | Marketing URL (optional) | `https://xungirl.com/flowbeat/` |
 | Privacy Policy URL (required for HealthKit apps) | `https://xungirl.com/flowbeat/privacy/` (built from privacy-policy.md by `scripts/build_privacy_page.py`) |
-| Copyright | `2026 [your legal name]` |
+| Copyright | `2026 xungirl` (chosen 2026-11-27; the store still shows the individual seller's legal name, which Apple requires) |
 
 The support page can be a short page on the blog with the description, the "not a medical device" line and a contact address (`xungirl1024@163.com`).
 
