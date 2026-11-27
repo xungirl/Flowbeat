@@ -60,7 +60,7 @@ Contact: xungirl1024@163.com
 
 ## Things to verify on a real watch before pasting this
 
-**Verified on a real Apple Watch S9 + iPhone with TestFlight build 1.0.0 (2), 2026-11-27:** sessions save on the watch and arrive on the iPhone; the timer keeps running with the wrist lowered, in another app and with the watch locked; walking shows "Away"; **no Flowbeat workout appears in Health → Activity → Workouts after "End"** (discardWorkout works). The items below that are not covered by this list are still open.
+**Verified on a real Apple Watch S9, 2026-11-27, with the devtest Release build installed 2026-11-22 (`com.xungirl.flowbeat.devtest.*`, not the TestFlight build):** sessions save on the watch; the timer keeps running with the wrist lowered, in another app and with the watch locked; walking shows "Away"; **no Flowbeat workout appears in Health → Activity → Workouts after "End"** (discardWorkout works). Watch → iPhone sync was **not** verified (the devtest watch app had no devtest iPhone app to send to). The items below that are not covered by this list are still open.
 
 - The workout really is absent from the Fitness and Health apps after "End". The code calls `discardWorkout()`, but this has only run in the simulator. Heart-rate samples that the watch measures during the session may still show up in Health under "Apple Watch", as for any workout; check what appears and adjust the wording if needed.
 - The exact Settings path for re-enabling Health access on watchOS and in the iPhone Health app. The in-app text says *Health app on iPhone → Sharing → Apps → Flowbeat* or *Settings → Health on the watch*.
