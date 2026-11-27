@@ -12,7 +12,7 @@ v1 scope (changed 2026-11-22): an **iPhone app + Apple Watch app**. The watch ap
 |---|---|---|
 | Name | `Flowbeat Focus` (registered 2026-11-22; `Flowbeat` was taken) | 14 / 30 |
 | Subtitle | `Focus from heart rate & motion` | 30 / 30 |
-| Promotional text | `Start a session, sit down and work. Your watch shows a live 0–100 focus estimate. Everything stays on your wrist.` | 113 / 170 |
+| Promotional text | `Start a session, sit down and work. Your watch shows a live 0–100 focus estimate. No account, no ads, no tracking.` | 114 / 170 |
 | Keywords | `focus,flow,concentration,productivity,deep work,study,pomodoro,heart rate,attention,timer,mindful` | 97 / 100 (already covers Pomodoro; unchanged) |
 
 The App Store Connect record is "Flowbeat Focus" (app 1.0, bundle com.xungirl.flowbeat, SKU flowbeat-001). The home-screen name stays "Flowbeat" (CFBundleDisplayName). Build 1.0.0 (1) uploaded 2026-11-22.
@@ -79,7 +79,7 @@ If v1.0 is ever submitted *without* these features and they ship later as an upd
 |---|---|---|
 | 名称 | `心流 Flowbeat：专注指数` | 16 / 30 |
 | 副标题 | `用心率和手腕动作估计你的专注` | 14 / 30 |
-| 推广文本 | `开始一次专注，坐下工作。手表上实时显示 0–100 的专注估计，所有数据只留在你的手腕上。` | 45 / 170 |
+| 推广文本 | `开始一次专注，坐下工作。手表上实时显示 0–100 的专注估计。没有账号、没有广告、不追踪。` | 46 / 170 |
 | 关键词 | `专注,心流,学习,效率,番茄钟,心率,注意力,深度工作,计时` | 30 / 100（UTF-8 74 字节） |
 
 **描述**
