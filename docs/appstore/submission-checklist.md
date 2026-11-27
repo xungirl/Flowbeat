@@ -83,6 +83,8 @@ Build the **Release** configuration to the watch (Product → Scheme → Edit Sc
 | 20 | Double tap (Series 9+/Ultra 2, watchOS 11) | During a session, on the controls page, double-tap | Marks "Focused" |
 | 21 | Personalized scoring | Label 8+ focused and 8+ distracted moments across sessions | Settings shows "Active" with the top factors; the ring shows "Personalized". Note whether the score feels better or worse (not validated) |
 
+**Results 2026-11-27 (TestFlight build 2, S9 + iPhone):** passed 5 (session saved), 6 (background / other app / locked), 8 (no workout in Health), 9 (away detection), 22 (watch → iPhone). Battery drain per hour (7) not recorded.
+
 If 5–7 fail (the app is suspended or the battery drain is unacceptable), stop and fix before going further.
 
 ## 4. Version check
